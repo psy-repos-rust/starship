@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct PackageConfig<'a> {
     pub format: &'a str,
     pub symbol: &'a str,
@@ -13,7 +16,7 @@ pub struct PackageConfig<'a> {
     pub version_format: &'a str,
 }
 
-impl<'a> Default for PackageConfig<'a> {
+impl Default for PackageConfig<'_> {
     fn default() -> Self {
         PackageConfig {
             format: "is [$symbol$version]($style) ",

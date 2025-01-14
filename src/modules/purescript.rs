@@ -1,4 +1,4 @@
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 
 use crate::configs::purescript::PureScriptConfig;
 use crate::formatter::StringFormatter;
@@ -58,7 +58,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
 #[cfg(test)]
 mod tests {
     use crate::test::ModuleRenderer;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::fs::File;
     use std::io;
 
@@ -86,6 +86,28 @@ mod tests {
     fn folder_with_spago_file() -> io::Result<()> {
         let dir = tempfile::tempdir()?;
         File::create(dir.path().join("spago.dhall"))?.sync_all()?;
+
+        let actual = ModuleRenderer::new("purescript").path(dir.path()).collect();
+        let expected = Some(format!("via {}", Color::White.bold().paint("<=> v0.13.5 ")));
+        assert_eq!(expected, actual);
+        dir.close()
+    }
+
+    #[test]
+    fn folder_with_spago_yaml_file() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+        File::create(dir.path().join("spago.yaml"))?.sync_all()?;
+
+        let actual = ModuleRenderer::new("purescript").path(dir.path()).collect();
+        let expected = Some(format!("via {}", Color::White.bold().paint("<=> v0.13.5 ")));
+        assert_eq!(expected, actual);
+        dir.close()
+    }
+
+    #[test]
+    fn folder_with_spago_lock_file() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+        File::create(dir.path().join("spago.lock"))?.sync_all()?;
 
         let actual = ModuleRenderer::new("purescript").path(dir.path()).collect();
         let expected = Some(format!("via {}", Color::White.bold().paint("<=> v0.13.5 ")));

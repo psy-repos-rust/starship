@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct DenoConfig<'a> {
     pub format: &'a str,
     pub version_format: &'a str,
@@ -15,7 +18,7 @@ pub struct DenoConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for DenoConfig<'a> {
+impl Default for DenoConfig<'_> {
     fn default() -> Self {
         DenoConfig {
             format: "via [$symbol($version )]($style)",
@@ -27,6 +30,7 @@ impl<'a> Default for DenoConfig<'a> {
             detect_files: vec![
                 "deno.json",
                 "deno.jsonc",
+                "deno.lock",
                 "mod.ts",
                 "deps.ts",
                 "mod.js",

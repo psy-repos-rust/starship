@@ -1,9 +1,14 @@
-use crate::config::{ModuleConfig, VecOr};
+use crate::config::VecOr;
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct PythonConfig<'a> {
     pub pyenv_version_name: bool,
     pub pyenv_prefix: &'a str,
@@ -16,9 +21,10 @@ pub struct PythonConfig<'a> {
     pub detect_extensions: Vec<&'a str>,
     pub detect_files: Vec<&'a str>,
     pub detect_folders: Vec<&'a str>,
+    pub detect_env_vars: Vec<&'a str>,
 }
 
-impl<'a> Default for PythonConfig<'a> {
+impl Default for PythonConfig<'_> {
     fn default() -> Self {
         PythonConfig {
             pyenv_version_name: false,
@@ -29,7 +35,7 @@ impl<'a> Default for PythonConfig<'a> {
             style: "yellow bold",
             symbol: "🐍 ",
             disabled: false,
-            detect_extensions: vec!["py"],
+            detect_extensions: vec!["py", "ipynb"],
             detect_files: vec![
                 "requirements.txt",
                 ".python-version",
@@ -38,8 +44,10 @@ impl<'a> Default for PythonConfig<'a> {
                 "tox.ini",
                 "setup.py",
                 "__init__.py",
+                "pixi.toml",
             ],
             detect_folders: vec![],
+            detect_env_vars: vec!["VIRTUAL_ENV"],
         }
     }
 }

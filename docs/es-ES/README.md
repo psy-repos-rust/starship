@@ -1,10 +1,14 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: '¡El prompt minimalista, ultrarápido e infinitamente personalizable para cualquier intérprete de comandos!'
-actionText: Comenzar →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text:
+  tagline: '¡El prompt minimalista, ultrarápido e infinitamente personalizable para cualquier intérprete de comandos!'
+  actions:
+    - 
+      theme: brand
+      text: Comenzar →
+      link: ./guide/
 features:
   - 
     title: Compatibilidad primero
@@ -18,15 +22,27 @@ features:
 footer: Bajo una licencia ISC | Derechos de autor © 2019-presente Colaboradores de Starship
 #Used for the description meta tag, for SEO
 metaTitle: "Starship: el prompt multi-intérprete"
-description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente personalizable para cualquier intérprete de comandos! Muestra la información que necesitas, a la par que es elegante y minimalista. Quick installation available for Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, and PowerShell.'
+description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente personalizable para cualquier intérprete de comandos! Muestra la información que necesitas, a la par que es elegante y minimalista. Instalación rápida disponible para Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, y PowerShell.'
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Prerequisitos
 
@@ -34,7 +50,7 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
 
 ### Instalación rápida
 
-1. Instalar el binario de **Starship**:
+1. Instala el binario de **Starship**:
 
 
    #### Instalar la última versión
@@ -42,23 +58,24 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
    Con el intérprete de comandos:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
+
    Para actualizar Starship, vuelve a ejecutar el guión anterior. Reemplazará la versión actual sin tocar la configuración de Starship.
 
 
-   #### Instalar con un gestor de paquetes
+   #### Instalar vía un gestor de paquetes
 
-   Con [Homebrew](https://brew.sh/):
+   Con [Homebew](https://brew.sh/):
 
    ```sh
    brew install starship
    ```
 
-   Con [Scoop](https://scoop.sh):
+   With [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Añade el guión de inicio al archivo de configuración de tu intérprete de comandos:
@@ -66,7 +83,7 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
 
    #### Bash
 
-   Añade el siguiente código al final de `~/.bashrc`:
+   Añade la siguiente línea al final de `~/.bashrc`:
 
    ```sh
    # ~/.bashrc
@@ -119,7 +136,11 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
 
    #### Elvish
 
-   ::: advertencia Solo se admite Elvish v0.17 o superior. :::
+   ::: warning
+
+   Sólo se admite elvish v0.18 o superior.
+
+   :::
 
    Añade el siguiente código al final de `~/.elvish/rc.elv`:
 
@@ -143,15 +164,17 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
 
    #### Nushell
 
-   ::: advertencia Esto cambiará en el futuro. Sólo se admite la versión nu v0.33 o superior. ::: Añade lo siguiente a tu archivo de configuración nu. Puedes comprobar la ubicación de este archivo ejecutando `ruta de configuración` en nu.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Esto cambiará en el futuro. Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
@@ -168,7 +191,7 @@ description: '¡Starship es el prompt minimalista, ultrarápido e infinitamente 
 
    #### Cmd
 
-   You need to use [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) with Cmd. Add the following to a file `starship.lua` and place this file in Clink scripts directory:
+   Necesitas usar [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) con Cmd. Añade lo siguiente a un archivo `starship.lua` y coloca este archivo en el directorio de scripts de Clink:
 
    ```lua
    -- starship.lua

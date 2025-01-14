@@ -1,28 +1,32 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct BatteryConfig<'a> {
     pub full_symbol: &'a str,
     pub charging_symbol: &'a str,
     pub discharging_symbol: &'a str,
     pub unknown_symbol: &'a str,
     pub empty_symbol: &'a str,
+    #[serde(borrow)]
     pub display: Vec<BatteryDisplayConfig<'a>>,
     pub disabled: bool,
     pub format: &'a str,
 }
 
-impl<'a> Default for BatteryConfig<'a> {
+impl Default for BatteryConfig<'_> {
     fn default() -> Self {
         BatteryConfig {
-            full_symbol: " ",
-            charging_symbol: " ",
-            discharging_symbol: " ",
-            unknown_symbol: " ",
-            empty_symbol: " ",
+            full_symbol: "󰁹 ",
+            charging_symbol: "󰂄 ",
+            discharging_symbol: "󰂃 ",
+            unknown_symbol: "󰁽 ",
+            empty_symbol: "󰂎 ",
             format: "[$symbol$percentage]($style) ",
             display: vec![BatteryDisplayConfig::default()],
             disabled: false,
@@ -30,7 +34,13 @@ impl<'a> Default for BatteryConfig<'a> {
     }
 }
 
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct BatteryDisplayConfig<'a> {
     pub threshold: i64,
     pub style: &'a str,
@@ -38,7 +48,7 @@ pub struct BatteryDisplayConfig<'a> {
     pub discharging_symbol: Option<&'a str>,
 }
 
-impl<'a> Default for BatteryDisplayConfig<'a> {
+impl Default for BatteryDisplayConfig<'_> {
     fn default() -> Self {
         BatteryDisplayConfig {
             threshold: 10,

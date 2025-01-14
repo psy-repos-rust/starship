@@ -1,13 +1,17 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: Минималистичная, быстрая и бесконечно настраиваемая командная строка для любой оболочки!
-actionText: Начало работы →
-actionLink: ./guide/
+layout: дом
+hero:
+  image: /logo.svg
+  text:
+  tagline: Минималистичное, быстрое и бесконечно настраиваемое приглашение командной строки для любой оболочки!
+  actions:
+    - 
+      theme: бренд
+      text: Начало работы →
+      link: ./guide/
 features:
   - 
-    title: Совместивость в первую очередь
+    title: Совместимость в первую очередь
     details: Работает на большинстве распространенных оболочек и наиболее распространенных операционных системах. Используйте везде!
   - 
     title: Основана на Rust
@@ -18,47 +22,60 @@ features:
 footer: Под лицензией ISC | Авторское право © 2019-настоящее Starship Contributors
 #Used for the description meta tag, for SEO
 metaTitle: "Starship: Cross-Shell Prompt"
-description: Starship - минимальная, быстрая и бесконечная настраиваемая командная строка для любой оболочки! Показывает нужную вам информацию, оставаясь красивой и минималистичной. Quick installation available for Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, and PowerShell.
+description: Starship - минимальная, быстрая и бесконечная настраиваемая командная строка для любой оболочки! Показывает нужную вам информацию, оставаясь красивой и минималистичной. Быстрая установка доступна для Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, и PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
 
-### Обязательные требования
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
+
+### Обязательные условия
 
 - Установленный и включенный шрифт [Nerd Font](https://www.nerdfonts.com/) в вашем терминале.
 
 ### Быстрая установка
 
-1. Установите двоичный файл **starship**:
+1. Установите бинарный файл **starship**:
 
 
-   #### Установить последнюю версию
+   #### Установка последней версии
 
-   Через Bash:
+   Через Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
-   Для обновления Starship перезапустите этот скрипт. Он заменит текущую версию без изменения конфигурации.
+
+   Чтобы обновить Starship, повторно запустите приведенный выше скрипт. Он заменит текущую версию, не затрагивая конфигурацию Starship.
 
 
-   #### Установить через менеджер пакетов
+   #### Установка через пакетный менеджер
 
-   С [Homebrew](https://brew.sh/):
+   С помощью [Homebrew](https://brew.sh/):
 
    ```sh
    brew install starship
    ```
 
-   С [Scoop](https://scoop.sh):
+   С помощью [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Добавить сценарий инициализации в конфигурационный файл вашей оболочки:
@@ -119,7 +136,11 @@ description: Starship - минимальная, быстрая и бесконе
 
    #### Elvish
 
-   ::: warning Поддерживается только elvish v0.17 или выше. :::
+   ::: warning
+
+   Только elvish v0.18 или выше поддерживается.
+
+   :::
 
    Добавьте следующую строку в конец `~/.elvish/rc.elv`:
 
@@ -143,15 +164,17 @@ description: Starship - минимальная, быстрая и бесконе
 
    #### Nushell
 
-   ::: warning Это будет изменено. Поддерживается только nu версии v0.33 или выше. ::: Добавьте следующее в свой конфигурационный файл nu. Вы можете узнать расположение этого файла, выполнив `config path` в nu.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Это изменится в будущем. Поддерживается только Nushell v0.96+.
+
+   :::
+
+   Добавьте следующее в конец вашей конфигурации Nutshell (найдите это, запустив `$nu.config-path` в Nutshell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
@@ -168,7 +191,7 @@ description: Starship - минимальная, быстрая и бесконе
 
    #### Cmd
 
-   You need to use [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) with Cmd. Add the following to a file `starship.lua` and place this file in Clink scripts directory:
+   Вам нужно использовать [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) с помощью Cmd. Добавьте следующий файл `starship.lua` и поместите этот файл в каталог Clink скриптов:
 
    ```lua
    -- starship.lua

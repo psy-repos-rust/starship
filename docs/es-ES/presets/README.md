@@ -2,538 +2,76 @@
 
 Aqui tienes una colección de preajustes creados por la comunidad de Starship. ¡Si quieres compartir un preajuste, por favor, [envía un PR](https://github.com/starship/starship/edit/master/docs/presets/README.md) actualizando este archivo! 😊
 
-## Símbolos de Nerd Font
+Para obtener detalles sobre cómo utilizar un preajuste, simplemente haga clic en la imagen.
 
-Este preajuste no modifica nada excepto los símbolos usados para cada módulo. Si los emojis no son lo tuyo, ¡esto podría llamar tu atención!
+## [Símbolos de Nerd Font](./nerd-font.md)
 
-![Captura de pantalla del preajuste de los Símbolos de Nerd Font](/presets/nerd-font-symbols.png)
+Este preajuste cambia los símbolos de cada módulo para usar símbolos Nerd Font.
 
-### Prerequisitos
+[![Captura de pantalla del preajuste de los Símbolos de Nerd Font](/presets/img/nerd-font-symbols.png "Haga clic para ver el preajuste de Símbolos de Nerd Font")](./nerd-font)
 
-- Una [Nerd Font](https://www.nerdfonts.com/) instalada y habilitada en tu terminal (el ejemplo usa Fira Code Nerd Font)
+## [Sin fuentes Nerd](./no-nerd-font.md)
 
-### Configuración
+This preset changes the symbols for several modules so that no Nerd Font symbols are used anywhere in the prompt.
 
-```toml
-[aws]
-symbol = "  "
+::: tip
 
-[conda]
-symbol = " "
+This preset will become the default preset [in a future release of starship](https://github.com/starship/starship/pull/3544).
 
-[dart]
-symbol = " "
+:::
 
-[directory]
-read_only = " "
+[Click to view No Nerd Font preset](./no-nerd-font)
 
-[docker_context]
-symbol = " "
-
-[elixir]
-symbol = " "
-
-[elm]
-symbol = " "
-
-[git_branch]
-symbol = " "
-
-[golang]
-symbol = " "
-
-[hg_branch]
-symbol = " "
-
-[java]
-symbol = " "
-
-[julia]
-symbol = " "
-
-[memory_usage]
-symbol = " "
-
-[nim]
-symbol = " "
-
-[nix_shell]
-symbol = " "
-
-[nodejs]
-symbol = " "
-
-[package]
-symbol = " "
-
-[perl]
-symbol = " "
-
-[php]
-symbol = " "
-
-[python]
-symbol = " "
-
-[ruby]
-symbol = " "
-
-[rust]
-symbol = " "
-
-[scala]
-symbol = " "
-
-[shlvl]
-symbol = " "
-
-[swift]
-symbol = "ﯣ "
-```
-
-## Segmentos entre Corchetes
+## [Segmentos entre Corchetes](./bracketed-segments.md)
 
 Este preajuste cambia el formato de todos los módulos incorporados para mostrar su segmento entre corchetes en lugar de usar la redacción por defecto de Starship ("via", "on", etc.).
 
-Antes:
+[![Captura de pantalla del preajuste de los Segmentos entre Corchetes](/presets/img/bracketed-segments.png "Haga clic para ver el preajuste de Segmentos entre Corchetes")](./bracketed-segments)
 
-![Captura de pantalla de la configuración por defecto de Starship](/presets/bracketed-segments-before.png)
+## [Símbolos de texto sin formato](./plain-text.md)
 
-Después:
+Este preajuste cambia los símbolos a texto sin formato. Bueno si usted no tiene acceso a Unicode.
 
-![Captura de pantalla del preajuste de los Segmentos entre Corchetes](/presets/bracketed-segments-after.png)
+[![Captura de pantalla del ajuste de los Símbolos de Texto Plano](/presets/img/plain-text-symbols.png "Haga clic para ver el preajuste de Símbolos de Texto Sin Formato")](./plain-text)
 
-### Configuración
-
-```toml
-[aws]
-format = '\[[$symbol($profile)(\($region\))(\[$duration\])]($style)\]'
-
-[cmake]
-format = '\[[$symbol($version)]($style)\]'
-
-[cmd_duration]
-format = '\[[⏱ $duration]($style)\]'
-
-[cobol]
-format = '\[[$symbol($version)]($style)\]'
-
-[conda]
-format = '\[[$symbol$environment]($style)\]'
-
-[crystal]
-format = '\[[$symbol($version)]($style)\]'
-
-[dart]
-format = '\[[$symbol($version)]($style)\]'
-
-[deno]
-format = '\[[$symbol($version)]($style)\]'
-
-[docker_context]
-format = '\[[$symbol$context]($style)\]'
-
-[dotnet]
-format = '\[[$symbol($version)(🎯 $tfm)]($style)\]'
-
-[elixir]
-format = '\[[$symbol($version \(OTP $otp_version\))]($style)\]'
-
-[elm]
-format = '\[[$symbol($version)]($style)\]'
-
-[erlang]
-format = '\[[$symbol($version)]($style)\]'
-
-[gcloud]
-format = '\[[$symbol$account(@$domain)(\($region\))]($style)\]'
-
-[git_branch]
-format = '\[[$symbol$branch]($style)\]'
-
-[git_status]
-format = '([\[$all_status$ahead_behind\]]($style))'
-
-[golang]
-format = '\[[$symbol($version)]($style)\]'
-
-[helm]
-format = '\[[$symbol($version)]($style)\]'
-
-[hg_branch]
-format = '\[[$symbol$branch]($style)\]'
-
-[java]
-format = '\[[$symbol($version)]($style)\]'
-
-[julia]
-format = '\[[$symbol($version)]($style)\]'
-
-[kotlin]
-format = '\[[$symbol($version)]($style)\]'
-
-[kubernetes]
-format = '\[[$symbol$context( \($namespace\))]($style)\]'
-
-[lua]
-format = '\[[$symbol($version)]($style)\]'
-
-[memory_usage]
-format = '\[$symbol[$ram( | $swap)]($style)\]'
-
-[nim]
-format = '\[[$symbol($version)]($style)\]'
-
-[nix_shell]
-format = '\[[$symbol$state( \($name\))]($style)\]'
-
-[nodejs]
-format = '\[[$symbol($version)]($style)\]'
-
-[ocaml]
-format = '\[[$symbol($version)(\($switch_indicator$switch_name\))]($style)\]'
-
-[openstack]
-format = '\[[$symbol$cloud(\($project\))]($style)\]'
-
-[package]
-format = '\[[$symbol$version]($style)\]'
-
-[perl]
-format = '\[[$symbol($version)]($style)\]'
-
-[php]
-format = '\[[$symbol($version)]($style)\]'
-
-[pulumi]
-format = '\[[$symbol$stack]($style)\]'
-
-[purescript]
-format = '\[[$symbol($version)]($style)\]'
-
-[python]
-format = '\[[${symbol}${pyenv_prefix}(${version})(\($virtualenv\))]($style)\]'
-
-[red]
-format = '\[[$symbol($version)]($style)\]'
-
-[ruby]
-format = '\[[$symbol($version)]($style)\]'
-
-[rust]
-format = '\[[$symbol($version)]($style)\]'
-
-[scala]
-format = '\[[$symbol($version)]($style)\]'
-
-[sudo]
-format = '\[[as $symbol]\]'
-
-[swift]
-format = '\[[$symbol($version)]($style)\]'
-
-[terraform]
-format = '\[[$symbol$workspace]($style)\]'
-
-[time]
-format = '\[[$time]($style)\]'
-
-[username]
-format = '\[[$user]($style)\]'
-
-[vagrant]
-format = '\[[$symbol($version)]($style)\]'
-
-[vlang]
-format = '\[[$symbol($version)]($style)\]'
-
-[zig]
-format = '\[[$symbol($version)]($style)\]'
-```
-
-## Símbolos de texto sin formato
-
-Este preajuste cambia los símbolos a texto sin formato. Si tu terminal/fuente no pudo renderizar el NerdFonts/emojis, ¡tal vez podría probar este preajuste!
-
-Antes (configuración por defecto con Fuente Fixedsys):
-
-![Captura de pantalla de configuración por defecto de Starship con fuente Fixedsys](/presets/plain-text-symbols-before.png)
-
-Después (Símbolos de texto sin formato):
-
-![Captura de pantalla del ajuste de los Símbolos de Texto Plano](/presets/plain-text-symbols-after.png)
-
-### Configuración
-
-```toml
-[character]
-success_symbol = "[>](bold green)"
-error_symbol = "[x](bold red)"
-vicmd_symbol = "[<](bold green)"
-
-[git_commit]
-tag_symbol = " tag "
-
-[git_status]
-ahead = ">"
-behind = "<"
-diverged = "<>"
-renamed = "r"
-deleted = "x"
-
-[aws]
-symbol = "aws "
-
-[cobol]
-symbol = "cobol "
-
-[conda]
-symbol = "conda "
-
-[crystal]
-symbol = "cr "
-
-[cmake]
-symbol = "cmake "
-
-[dart]
-symbol = "dart "
-
-[deno]
-symbol = "deno "
-
-[dotnet]
-symbol = ".NET "
-
-[directory]
-read_only = " ro"
-
-[docker_context]
-symbol = "docker "
-
-[elixir]
-symbol = "exs "
-
-[elm]
-symbol = "elm "
-
-[git_branch]
-symbol = "git "
-
-[golang]
-symbol = "go "
-
-[hg_branch]
-symbol = "hg "
-
-[java]
-symbol = "java "
-
-[julia]
-symbol = "jl "
-
-[kotlin]
-symbol = "kt "
-
-[nodejs]
-symbol = "nodejs "
-
-[memory_usage]
-symbol = "memory "
-
-[nim]
-symbol = "nim "
-
-[nix_shell]
-symbol = "nix "
-
-[ocaml]
-symbol = "ml "
-
-[package]
-symbol = "pkg "
-
-[perl]
-symbol = "pl "
-
-[php]
-symbol = "php "
-
-[pulumi]
-symbol = "pulumi "
-
-[purescript]
-symbol = "purs "
-
-[python]
-symbol = "py "
-
-[ruby]
-symbol = "rb "
-
-[rust]
-symbol = "rs "
-
-[scala]
-symbol = "scala "
-
-[sudo]
-symbol = "sudo "
-
-[swift]
-symbol = "swift "
-```
-
-## Ocultar versiones en tiempo de ejecución
+## [Ocultar Versiones en Tiempo de Ejecución](./no-runtimes.md)
 
 Este preajuste oculta la versión de los tiempos de ejecución del idioma. Si trabajas en contenedores o entornos virtualizados, ¡ésto es para ti!
 
-![Captura de pantalla del preajuste de Ocultar de versiones de tiempo de ejecución](/presets/hide-runtime-versions.png)
+[![Captura de pantalla del preajuste de Ocultar de versiones de tiempo de ejecución](/presets/img/no-runtime-versions.png "Haga clic para ver el preajuste de Ocultar Versiones en Tiempo de Ejecución")](./no-runtimes)
 
-### Configuración
+## [No Empty Icons](./no-empty-icons.md)
 
-```toml
-[cmake]
-format = "via [$symbol]($style)"
+This preset does not show icons if the toolset is not found.
 
-[cobol]
-format = "via [$symbol]($style)"
+[![Screenshot of No Empty Icons preset](/presets/img/no-empty-icons.png "Haga clic para ver el preajuste de Ocultar Versiones en Tiempo de Ejecución")](./no-empty-icons.md)
 
-[crystal]
-format = "via [$symbol]($style)"
-
-[dart]
-format = "via [$symbol]($style)"
-
-[deno]
-format = "via [$symbol]($style)"
-
-[dotnet]
-format = "[$symbol(🎯 $tfm )]($style)"
-
-[elixir]
-format = 'via [$symbol]($style)'
-
-[elm]
-format = 'via [$symbol]($style)'
-
-[erlang]
-format = 'via [$symbol]($style)'
-
-[golang]
-format = 'via [$symbol]($style)'
-
-[helm]
-format = 'via [$symbol]($style)'
-
-[julia]
-format = 'via [$symbol]($style)'
-
-[kotlin]
-format = 'via [$symbol]($style)'
-
-[lua]
-format = 'via [$symbol]($style)'
-
-[nim]
-format = 'via [$symbol]($style)'
-
-[nodejs]
-format = 'via [$symbol]($style)'
-
-[ocaml]
-format = 'via [$symbol(\($switch_indicator$switch_name\) )]($style)'
-
-[perl]
-format = 'via [$symbol]($style)'
-
-[php]
-format = 'via [$symbol]($style)'
-
-[pulumi]
-format = 'via [$symbol$stack]($style)'
-
-[purescript]
-format = 'via [$symbol]($style)'
-
-[red]
-format = 'via [$symbol]($style)'
-
-[rlang]
-format = 'via [$symbol]($style)'
-
-[ruby]
-format = 'via [$symbol]($style)'
-
-[rust]
-format = 'via [$symbol]($style)'
-
-[swift]
-format = 'via [$symbol]($style)'
-
-[vagrant]
-format = 'via [$symbol]($style)'
-
-[vlang]
-format = 'via [$symbol]($style)'
-
-[zig]
-format = 'via [$symbol]($style)'
-```
-
-## Pure
+## [Prompt de Pure](./pure-preset.md)
 
 Esta preajuste emula la apariencia y el comportamiento de [Pure](https://github.com/sindresorhus/pure).
 
-![Captura de pantalla del ajuste de Pure](/presets/pure-prompt.png)
+[![Captura de pantalla del ajuste de Pure](/presets/img/pure-preset.png "Haga clic para ver el preajuste del Prompt de Pure")](./pure-preset)
 
-### Configuración
+## [Pastel Powerline](./pastel-powerline.md)
 
-```toml
-format = """
-$username\
-$hostname\
-$directory\
-$git_branch\
-$git_state\
-$git_status\
-$cmd_duration\
-$line_break\
-$python\
-$character"""
+Este preajuste está inspirado en [M365Princess](https://github.com/JanDeDobbeleer/oh-my-posh/blob/main/themes/M365Princess.omp.json). También muestra cómo funciona la sustitución de rutas en Starship.
 
-[directory]
-style = "blue"
+[![Captura de pantalla del preajuste de Pastel Powerline](/presets/img/pastel-powerline.png "Haga clic para ver el preajuste del Prompt de Pure")](./pastel-powerline)
 
-[character]
-success_symbol = "[❯](purple)"
-error_symbol = "[❯](red)"
-vicmd_symbol = "[❮](green)"
+## [Tokyo Night](./tokyo-night.md)
 
-[git_branch]
-format = "[$branch]($style)"
-style = "bright-black"
+Este preset está inspirado en [tokyo-night-vscode-theme](https://github.com/enkia/tokyo-night-vscode-theme).
 
-[git_status]
-format = "[[(*$conflicted$untracked$modified$staged$renamed$deleted)](218) ($ahead_behind$stashed)]($style)"
-style = "cyan"
-conflicted = "​"
-untracked = "​"
-modified = "​"
-staged = "​"
-renamed = "​"
-deleted = "​"
-stashed = "≡"
+[![Captura del preset de Tokyo Night](/presets/img/tokyo-night.png "Click to view Tokyo Night preset")](./tokyo-night)
 
-[git_state]
-format = '\([$state( $progress_current/$progress_total)]($style)\) '
-style = "bright-black"
+## [Gruvbox Rainbow](./gruvbox-rainbow.md)
 
-[cmd_duration]
-format = "[$duration]($style) "
-style = "yellow"
+Este preajuste está muy inspirado en [Pastel Powerline](./pastel-powerline.md) y [Tokyo Night](./tokyo-night.md).
 
-[python]
-format = "[$virtualenv]($style) "
-style = "bright-black"
-```
+[![Captura de pantalla de el preajuste Gruvbox Rainbow](/presets/img/gruvbox-rainbow.png "Clic para ver el preajuste Gruvbox Rainbow")](./gruvbox-rainbow)
+
+## [Jetpack](./jetpack.md)
+
+Este es un preajuste pseudominimalista inspirado en las indicaciones [geometría](https://github.com/geometry-zsh/geometry) y [nave espacial](https://github.com/spaceship-prompt/spaceship-prompt).
+
+[![Captura de pantalla del preajuste Jetpack](/presets/img/jetpack.png "Click to view Jetpack preset")](./jetpack)

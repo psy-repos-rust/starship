@@ -1,10 +1,14 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: L'invite minimaliste, ultra-rapide et personnalisable à l'infini pour n'importe quel shell !
-actionText: Commencez →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text:
+  tagline: L'invite minimaliste, ultra-rapide et personnalisable à l'infini pour n'importe quel shell !
+  actions:
+    - 
+      theme: brand
+      text: Commencez →
+      link: ./guide/
 features:
   - 
     title: Compatibilité avant tout
@@ -18,21 +22,33 @@ features:
 footer: Licence ISC | Copyright © 2019-présent Contributeurs Starship
 #Used for the description meta tag, for SEO
 metaTitle: "Starship : Invite Multi-Shell"
-description: Starship est une invite minimaliste, ultra-rapide et hautement personnalisable pour n'importe quel shell ! Montre les informations dont vous avez besoin tout en restant élégante et minimaliste. Quick installation available for Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, and PowerShell.
+description: Starship est une invite minimaliste, ultra-rapide et hautement personnalisable pour n'importe quel shell ! Montre les informations dont vous avez besoin tout en restant élégante et minimaliste. Installation rapide disponible pour Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, et PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Pré-requis
 
 - Une [Nerd Font](https://www.nerdfonts.com/) est installée et activée dans votre terminal.
 
-### Installation rapide
+### Installation
 
 1. Installer le binaire **starship** :
 
@@ -42,8 +58,9 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
    Avec Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
+
    Pour mettre à jour Starship, relancez le script ci-dessus. Cela remplacera la version actuelle sans toucher à la configuration de Starship.
 
 
@@ -55,10 +72,10 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
    brew install starship
    ```
 
-   Avec [Scoop](https://scoop.sh):
+   With [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Ajouter le script d’initialisation au fichier configuration de votre shell:
@@ -99,7 +116,7 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
 
    #### Powershell
 
-   Ajoutez ce qui suit à la fin de `Microsoft.PowerShell_profile.ps1`. Vous pouvez vérifier l'emplacement de ce fichier en regardant la variable `$PROFILE` dans PowerShell. Habituellement, son chemin est `~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` ou `~/.config/powershell/Microsoft.PowerShell_profile.ps1` sur -Nix.
+   Ajouter ce qui suit à la fin de `Microsoft.PowerShell_profile.ps1`. Vous pouvez vérifier l'emplacement de ce fichier en regardant la variable `$PROFILE` dans PowerShell. Habituellement, son chemin est `~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` ou `~/.config/powershell/Microsoft.PowerShell_profile.ps1` sur -Nix.
 
    ```sh
    Invoke-Expression (&starship init powershell)
@@ -119,7 +136,11 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
 
    #### Elvish
 
-   ::: warning Seul elvish v0.17 ou supérieur est pris en charge. :::
+   ::: warning
+
+   Seul elvish v0.18 ou supérieur est pris en charge.
+
+   :::
 
    Ajoutez ce qui suit à la fin de `~/.elvish/rc.elv`:
 
@@ -143,15 +164,17 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
 
    #### Nushell
 
-   ::: warning Cela va changer dans le futur. Seule la version nu v0.33 ou supérieure est prise en charge. Ajoutez ce qui suit à votre fichier de configuration nu. Vous pouvez vérifier l'emplacement de ce fichier en exécutant `config path` dans 'nu'.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Ceci va changer dans le futur. Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
@@ -168,7 +191,7 @@ description: Starship est une invite minimaliste, ultra-rapide et hautement pers
 
    #### Cmd
 
-   Vous devez utiliser [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) avec Cmd. Add the following to a file `starship.lua` and place this file in Clink scripts directory:
+   Vous devez utiliser [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) avec Cmd. Ajoutez le code ci-dessous dans un fichier `starship.lua` et placez-le dans le dossier des scripts Clink:
 
    ```lua
    -- starship.lua

@@ -40,6 +40,14 @@ has() {
   command -v "$1" 1>/dev/null 2>&1
 }
 
+curl_is_snap() {
+  curl_path="$(command -v curl)"
+  case "$curl_path" in
+    /snap/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # Make sure user is not using zsh or non-POSIX-mode bash, which can cause issues
 verify_shell_is_posix_or_exit() {
   if [ -n "${ZSH_VERSION+x}" ]; then
@@ -55,7 +63,6 @@ verify_shell_is_posix_or_exit() {
   fi
 }
 
-# Gets path to a temporary file, even if
 get_tmpfile() {
   suffix="$1"
   if has mktemp; then
@@ -82,7 +89,13 @@ download() {
   file="$1"
   url="$2"
 
-  if has curl; then
+  if has curl && curl_is_snap; then
+    warn "curl installed through snap cannot download starship."
+    warn "See https://github.com/starship/starship/issues/5403 for details."
+    warn "Searching for other HTTP download programs..."
+  fi
+
+  if has curl && ! curl_is_snap; then
     cmd="curl --fail --silent --location --output $file $url"
   elif has wget; then
     cmd="wget --quiet --output-document=$file $url"
@@ -111,12 +124,12 @@ unpack() {
 
   case "$archive" in
     *.tar.gz)
-      flags=$(test -n "${VERBOSE-}" && echo "-xzvf" || echo "-xzf")
+      flags=$(test -n "${VERBOSE-}" && echo "-xzvof" || echo "-xzof")
       ${sudo} tar "${flags}" "${archive}" -C "${bin_dir}"
       return 0
       ;;
     *.zip)
-      flags=$(test -z "${VERBOSE-}" && echo "-qq" || echo "")
+      flags=$(test -z "${VERBOSE-}" && echo "-qqo" || echo "-o")
       UNZIP="${flags}" ${sudo} unzip "${archive}" -d "${bin_dir}"
       return 0
       ;;
@@ -144,7 +157,8 @@ usage() {
     "-b, --bin-dir" "Override the bin installation directory [default: ${BIN_DIR}]" \
     "-a, --arch" "Override the architecture identified by the installer [default: ${ARCH}]" \
     "-B, --base-url" "Override the base URL used for downloading releases [default: ${BASE_URL}]" \
-    "-h, --help" "Dispays this help message"
+    "-v, --version" "Install a specific version of starship [default: ${VERSION}]" \
+    "-h, --help" "Display this help message"
 }
 
 elevate_priv() {
@@ -263,7 +277,7 @@ confirm() {
 }
 
 check_bin_dir() {
-  bin_dir="$1"
+  bin_dir="${1%/}"
 
   if [ ! -d "$BIN_DIR" ]; then
     error "Installation location $BIN_DIR does not appear to be a directory"
@@ -276,7 +290,7 @@ check_bin_dir() {
   good=$(
     IFS=:
     for path in $PATH; do
-      if [ "${path}" = "${bin_dir}" ]; then
+      if [ "${path%/}" = "${bin_dir}" ]; then
         printf 1
         break
       fi
@@ -297,7 +311,7 @@ print_install() {
     # we don't want these '~' expanding
     config_file="~/.${s}rc"
     config_cmd="eval \"\$(starship init ${s})\""
- 
+
     case ${s} in
       ion )
         # shellcheck disable=SC2088
@@ -336,22 +350,17 @@ print_install() {
         ;;
       nushell )
         # shellcheck disable=SC2088
-        config_file="your nu config file."
-        config_cmd="startup = [
-          \"mkdir ~/.cache/starship\",
-          \"starship init nu | save ~/.cache/starship/init.nu\",
-          \"source ~/.cache/starship/init.nu\"
-        ]
-        prompt = \"starship_prompt\""
+        config_file="${BOLD}your nu config file${NO_COLOR} (find it by running ${BOLD}\$nu.config-path${NO_COLOR} in Nushell)"
+        config_cmd="mkdir (\$nu.data-dir | path join \"vendor/autoload\")
+        starship init nu | save -f (\$nu.data-dir | path join \"vendor/autoload/starship.nu\")"
         warning="${warning} This will change in the future.
-  Only nu version v0.33 or higher is supported.
-  You can check the location of this your config file by running config path in nu"
+  Only Nushell v0.96 or higher is supported."
         ;;
     esac
-    printf "  %s\n  %s\n  Add the following to the end of %s:\n\n\t%s\n\n" \
+    printf "  %s\n  %s\n  And add the following to the end of %s:\n\n\t%s\n\n" \
       "${BOLD}${UNDERLINE}${s}${NO_COLOR}" \
       "${warning}" \
-      "${BOLD}${config_file}${NO_COLOR}" \
+      "${config_file}" \
       "${config_cmd}"
   done
 
@@ -362,7 +371,7 @@ print_install() {
   Typically the path is ~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1 or ~/.config/powershell/Microsoft.PowerShell_profile.ps1 on -Nix." \
     "Invoke-Expression (&starship init powershell)"
 
-  printf "  %s\n You need to use Clink (v1.2.30+) with Cmd. Add the following to a file %s and place this file in Clink scripts directory:\n\n\t%s\n\n" \
+  printf "  %s\n  You need to use Clink (v1.2.30+) with Cmd. Add the following to a file %s and place this file in Clink scripts directory:\n\n\t%s\n\n" \
     "${BOLD}${UNDERLINE}Cmd${NO_COLOR}" \
     "${BOLD}starship.lua${NO_COLOR}" \
     "load(io.popen('starship init cmd'):read(\"*a\"))()"
@@ -413,6 +422,10 @@ if [ -z "${BASE_URL-}" ]; then
   BASE_URL="https://github.com/starship/starship/releases"
 fi
 
+if [ -z "${VERSION-}" ]; then
+  VERSION="latest"
+fi
+
 # Non-POSIX shells can break once executing code due to semantic differences
 verify_shell_is_posix_or_exit
 
@@ -433,6 +446,10 @@ while [ "$#" -gt 0 ]; do
     ;;
   -B | --base-url)
     BASE_URL="$2"
+    shift 2
+    ;;
+  -v | --version)
+    VERSION="$2"
     shift 2
     ;;
 
@@ -463,6 +480,10 @@ while [ "$#" -gt 0 ]; do
     ;;
   -B=* | --base-url=*)
     BASE_URL="${1#*=}"
+    shift 1
+    ;;
+  -v=* | --version=*)
+    VERSION="${1#*=}"
     shift 1
     ;;
   -V=* | --verbose=*)
@@ -506,16 +527,20 @@ if [ "${PLATFORM}" = "pc-windows-msvc" ]; then
   EXT=zip
 fi
 
-URL="${BASE_URL}/latest/download/starship-${TARGET}.${EXT}"
+if [ "${VERSION}" != "latest" ]; then
+  URL="${BASE_URL}/download/${VERSION}/starship-${TARGET}.${EXT}"
+else
+  URL="${BASE_URL}/latest/download/starship-${TARGET}.${EXT}"
+fi
+
 info "Tarball URL: ${UNDERLINE}${BLUE}${URL}${NO_COLOR}"
-confirm "Install Starship ${GREEN}latest${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
+confirm "Install Starship ${GREEN}${VERSION}${NO_COLOR} to ${BOLD}${GREEN}${BIN_DIR}${NO_COLOR}?"
 check_bin_dir "${BIN_DIR}"
 
 install "${EXT}"
-completed "Starship installed"
+completed "Starship ${VERSION} installed"
 
 printf '\n'
 info "Please follow the steps for your shell to complete the installation:"
 
 print_install
-
