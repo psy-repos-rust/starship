@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct GitBranchConfig<'a> {
     pub format: &'a str,
     pub symbol: &'a str,
@@ -12,19 +15,21 @@ pub struct GitBranchConfig<'a> {
     pub truncation_symbol: &'a str,
     pub only_attached: bool,
     pub always_show_remote: bool,
+    pub ignore_branches: Vec<&'a str>,
     pub disabled: bool,
 }
 
-impl<'a> Default for GitBranchConfig<'a> {
+impl Default for GitBranchConfig<'_> {
     fn default() -> Self {
         GitBranchConfig {
-            format: "on [$symbol$branch]($style)(:[$remote]($style)) ",
+            format: "on [$symbol$branch(:$remote_branch)]($style) ",
             symbol: " ",
             style: "bold purple",
-            truncation_length: std::i64::MAX,
+            truncation_length: i64::MAX,
             truncation_symbol: "…",
             only_attached: false,
             always_show_remote: false,
+            ignore_branches: vec![],
             disabled: false,
         }
     }

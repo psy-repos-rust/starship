@@ -1,10 +1,13 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText: null
-tagline: The minimal, blazing-fast, and infinitely customizable prompt for any shell!
-actionText: Get Started →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text: null
+  tagline: The minimal, blazing-fast, and infinitely customizable prompt for any shell!
+  actions:
+    - theme: brand
+      text: Get Started →
+      link: ./guide/
 features:
   - title: Compatibility First
     details: Works on the most common shells on the most common operating systems. Use it everywhere!
@@ -19,12 +22,24 @@ metaTitle: "Starship: Cross-Shell Prompt"
 description: Starship is the minimal, blazing fast, and extremely customizable prompt for any shell! Shows the information you need, while staying sleek and minimal. Quick installation available for Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, and PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Prerequisites
 
@@ -39,8 +54,9 @@ description: Starship is the minimal, blazing fast, and extremely customizable p
    With Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
+
    To update the Starship itself, rerun the above script. It will replace the current version without touching Starship's configuration.
 
    #### Install via Package Manager
@@ -51,10 +67,10 @@ description: Starship is the minimal, blazing fast, and extremely customizable p
    brew install starship
    ```
 
-   With [Scoop](https://scoop.sh):
+   With [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Add the init script to your shell's config file:
@@ -110,7 +126,9 @@ description: Starship is the minimal, blazing fast, and extremely customizable p
    #### Elvish
 
    ::: warning
-   Only elvish v0.17 or higher is supported.
+
+   Only elvish v0.18 or higher is supported.
+
    :::
 
    Add the following to the end of `~/.elvish/rc.elv`:
@@ -134,19 +152,17 @@ description: Starship is the minimal, blazing fast, and extremely customizable p
    #### Nushell
 
    ::: warning
-   This will change in the future.
-   Only nu version v0.33 or higher is supported.
-   :::
-   Add the following to your nu config file. You can check the location of this
-   file by running `config path` in nu.
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   This will change in the future.
+   Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
    #### Xonsh

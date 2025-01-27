@@ -9,6 +9,14 @@ on:
       - "docs/**"
       - "**.md"
 
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTFLAGS: "-D warnings"
+  RUSTUP_MAX_RETRIES: 10
+  MACOSX_DEPLOYMENT_TARGET: 10.7
+
 jobs:
   # Run the `rustfmt` code formatter
   rustfmt:
@@ -16,14 +24,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
+        uses: actions/checkout@v4
 
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
-          profile: minimal
           components: rustfmt
 
       - name: Build | Format
@@ -38,24 +43,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
-
-      - name: Setup | Cache
-        uses: Swatinem/rust-cache@v1
+        uses: actions/checkout@v4
 
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
-          profile: minimal
           components: clippy
 
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
+
       - name: Build | Lint
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: clippy
-          args: --workspace --locked --all-targets --all-features -- -D clippy::all
+        uses: giraffate/clippy-action@94e9bd8deab2618756ec5380f12eb35bcb0a88ca
 
   # Ensure that the project could be successfully compiled
   cargo_check:
@@ -63,17 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
-
-      - name: Setup | Cache
-        uses: Swatinem/rust-cache@v1
+        uses: actions/checkout@v4
 
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build | Check
         run: cargo check --workspace --locked
@@ -85,17 +80,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
-
-      - name: Setup | Cache
-        uses: Swatinem/rust-cache@v1
+        uses: actions/checkout@v4
 
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build | Check
         run: cargo check --workspace --locked --no-default-features
@@ -107,20 +98,45 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
-
-      - name: Setup | Cache
-        uses: Swatinem/rust-cache@v1
+        uses: actions/checkout@v4
 
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
 
       - name: Build | Check
         run: cargo check --workspace --locked --all-features
+
+  # Check if config schema needs to be updated to reflect updated configuration options
+  check_if_config_schema_up_to_date:
+    name: Check if config schema is up to date
+    needs: cargo_check
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Setup | Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup | Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run | Generate Schema
+        run: cargo run --locked --features config-schema -- config-schema > .github/config-schema.json
+
+      - name: Check | Detect Changes
+        uses: reviewdog/action-suggester@v1.19.0
+        with:
+          tool_name: starship config-schema
+          filter_mode: nofilter
+          fail_on_error: 'true'
 
   # Run tests on Linux, macOS, and Windows
   # On both Rust stable and Rust nightly
@@ -133,20 +149,37 @@ jobs:
       matrix:
         os: [ubuntu-latest, macOS-latest, windows-latest]
         rust: [stable, nightly]
+        include:
+          - os: windows-latest
+            rustflags: -C target-feature=+crt-static
+    env:
+      RUSTFLAGS: ${{ matrix.rustflags || '' }}
     steps:
       - name: Setup | Checkout
-        uses: actions/checkout@v2.4.0
-
-      - name: Setup | Cache
-        uses: Swatinem/rust-cache@v1
+        uses: actions/checkout@v4
 
       # Install all the required dependencies for testing
       - name: Setup | Rust
-        uses: actions-rs/toolchain@v1.0.7
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+          components: llvm-tools-preview
+
+      - name: Setup | Cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      # For windows installer test
+      # On stable rust & main repo pushes only
+      - name: Install cargo-wix [Windows]
+        continue-on-error: true
+        if: matrix.os == 'windows-latest' && matrix.rust == 'stable'
+        run: cargo install --version 0.3.4 cargo-wix
+        env:
+          # cargo-wix does not require static crt
+          RUSTFLAGS: ""
 
       # Install Mercurial (pre-installed on Linux and windows)
       - name: Setup | Mercurial (macos)
@@ -155,4 +188,66 @@ jobs:
 
       # Run the ignored tests that expect the above setup
       - name: Build | Test
-        run: cargo test --workspace --locked --all-features -- -Z unstable-options --include-ignored
+        run: "cargo llvm-cov
+          --all-features
+          --locked
+          --workspace
+          --lcov --output-path lcov.info
+          -- --include-ignored"
+        env:
+          # Avoid -D warnings on nightly builds
+          RUSTFLAGS: ""
+
+      - name: Build | Installer [Windows]
+        continue-on-error: true
+        if: matrix.os == 'windows-latest' && matrix.rust == 'stable'
+        run: >
+          cargo wix --dbg-build -v --nocapture -I install/windows/main.wxs
+          --output target/debug/starship-x86_64-pc-windows-msvc.msi
+
+      - name: Build | Chocolatey Package [Windows]
+        continue-on-error: true
+        if: matrix.os == 'windows-latest' && matrix.rust == 'stable'
+        run: |
+          # Setup dummy release artifacts
+          foreach ($arch in @("aarch64", "i686", "x86_64")) {
+            foreach ($ext in @("zip", "msi")) {
+              New-Item -ItemType Directory -Path ./starship-$arch-pc-windows-msvc.$ext
+              New-Item -ItemType File -Path ./starship-$arch-pc-windows-msvc.$ext/starship-$arch-pc-windows-msvc.$ext
+            }
+          }
+          # Build package
+          pwsh ./install/windows/choco/update.ps1
+        env:
+          STARSHIP_VERSION: v1.2.3
+
+      - name: Sign | Upload Executable [Windows]
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        id: unsigned-artifacts
+        if: matrix.os == 'windows-latest' && matrix.rust == 'stable' && github.event_name == 'push' && github.repository == 'starship/starship'
+        with:
+          name: unsigned-artifacts-dbg
+          path: |
+            target/debug/starship.exe
+            target/debug/starship-x86_64-pc-windows-msvc.msi
+
+      - name: Sign | Sign [Windows]
+        uses: signpath/github-action-submit-signing-request@v1
+        continue-on-error: true
+        if: matrix.os == 'windows-latest' && matrix.rust == 'stable' && github.event_name == 'push' && github.repository == 'starship/starship'
+        with:
+          api-token: '${{ secrets.SIGNPATH_API_TOKEN }}'
+          organization-id: '${{ vars.SIGNPATH_ORGANIZATION_ID }}'
+          project-slug: 'starship'
+          github-artifact-id: '${{ steps.unsigned-artifacts.outputs.artifact-id }}'
+          signing-policy-slug: 'test-signing'
+          wait-for-completion: true
+          output-artifact-directory: target/debug
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: github.repository == 'starship/starship'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: lcov.info

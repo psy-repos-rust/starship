@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct NodejsConfig<'a> {
     pub format: &'a str,
     pub version_format: &'a str,
@@ -16,7 +19,7 @@ pub struct NodejsConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for NodejsConfig<'a> {
+impl Default for NodejsConfig<'_> {
     fn default() -> Self {
         NodejsConfig {
             format: "via [$symbol($version )]($style)",
@@ -25,7 +28,7 @@ impl<'a> Default for NodejsConfig<'a> {
             style: "bold green",
             disabled: false,
             not_capable_style: "bold red",
-            detect_extensions: vec!["js", "mjs", "cjs", "ts"],
+            detect_extensions: vec!["js", "mjs", "cjs", "ts", "mts", "cts"],
             detect_files: vec!["package.json", ".node-version", ".nvmrc"],
             detect_folders: vec!["node_modules"],
         }

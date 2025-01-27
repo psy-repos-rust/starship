@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct GitCommitConfig<'a> {
     pub commit_hash_length: usize,
     pub format: &'a str,
@@ -12,9 +15,10 @@ pub struct GitCommitConfig<'a> {
     pub disabled: bool,
     pub tag_symbol: &'a str,
     pub tag_disabled: bool,
+    pub tag_max_candidates: usize,
 }
 
-impl<'a> Default for GitCommitConfig<'a> {
+impl Default for GitCommitConfig<'_> {
     fn default() -> Self {
         GitCommitConfig {
             // be consistent with git by default, which has DEFAULT_ABBREV set to 7
@@ -25,6 +29,7 @@ impl<'a> Default for GitCommitConfig<'a> {
             disabled: false,
             tag_symbol: " 🏷  ",
             tag_disabled: true,
+            tag_max_candidates: 0,
         }
     }
 }

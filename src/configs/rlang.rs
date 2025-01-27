@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct RLangConfig<'a> {
     pub format: &'a str,
     pub version_format: &'a str,
@@ -15,7 +18,7 @@ pub struct RLangConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for RLangConfig<'a> {
+impl Default for RLangConfig<'_> {
     fn default() -> Self {
         RLangConfig {
             format: "via [$symbol($version )]($style)",
@@ -24,7 +27,7 @@ impl<'a> Default for RLangConfig<'a> {
             symbol: "📐 ",
             disabled: false,
             detect_extensions: vec!["R", "Rd", "Rmd", "Rproj", "Rsx"],
-            detect_files: vec![".Rprofile"],
+            detect_files: vec!["DESCRIPTION"],
             detect_folders: vec![".Rproj.user"],
         }
     }

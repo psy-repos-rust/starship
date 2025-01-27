@@ -1,19 +1,19 @@
-# 🚀 Zaawansowana Instalacja
+# Zaawansowana Instalacja
 
 Aby zainstalować starship, musisz zrobić dwie rzeczy:
 
 1. Pobrać plik wykonywalny **starship** na swój komputer
 1. Skonfigurować swoją powłokę żeby używała pliku wykonywalnego starship jako wiersza poleceń poprzez modyfikację skryptów inicjalizacyjnych
 
-Dla większości użytkowników instrukcje na [stronie głównej](/guide/#🚀-installation) są wystarczające. However, for some more specialized platforms, different instructions are needed.
+For most users, the instructions on [the main page](../guide/#🚀-installation) will work great. Jednakże, dla niektórych wyspecjalizowanych platform, potrzebne będą inne.
 
-There are so many platforms out there that they didn't fit into the main README.md file, so here are some installation instructions for other platforms from the community. Is yours not here? Please do add it here if you figure it out!
+Istnieje tak wiele platform, że nie zmieściły się one w głównym pliku README.md, więc poniżej znajdują się instrukcje instalacji dla innych platform od społeczności. Nie ma tutaj Twojej? Jeśli się o tym dowiesz, dodaj je tutaj!
 
 ## [Chocolatey](https://chocolatey.org)
 
 ### Wymagania wstępne
 
-Head over to the [Chocolatey installation page](https://chocolatey.org/install) and follow the instructions to install Chocolatey.
+Przejdź na stronę [Instalacja Chocolatey](https://chocolatey.org/install) i postępuj zgodnie z instrukcjami, aby zainstalować Chocolatey.
 
 ### Instalacja
 
@@ -32,20 +32,20 @@ pkg install getconf
 ### Instalacja
 
 ```sh
-sh -c "$(curl -fsSL https://starship.rs/install.sh)" -- --bin-dir /data/data/com.termux/files/usr/bin
+curl -sS https://starship.rs/install.sh | sh -s -- --bin-dir /data/data/com.termux/files/usr/bin
 ```
 
 ## [Funtoo Linux](https://www.funtoo.org/Welcome)
 
 ### Instalacja
 
-On Funtoo Linux, starship can be installed from [core-kit](https://github.com/funtoo/core-kit/tree/1.4-release/app-shells/starship) via Portage:
+Na Funtoo Linux, starship może być zainstalowany przez Portage z [core-kit](https://github.com/funtoo/core-kit/tree/1.4-release/app-shells/starship):
 
 ```sh
 emerge app-shells/starship
 ```
 
-## [Nix](https://nixos.wiki/wiki/Nix)
+## [Nix](https://wiki.nixos.org/wiki/Nix)
 
 ### Getting the Binary
 
@@ -63,7 +63,6 @@ Enable the `programs.starship` module in your `home.nix` file, and add your sett
 {
   programs.starship = {
     enable = true;
-    enableZshIntegration = true;
     # Configuration written to ~/.config/starship.toml
     settings = {
       # add_newline = false;

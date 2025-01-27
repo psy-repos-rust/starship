@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 
 use crate::configs::docker_context::DockerContextConfig;
 use crate::formatter::StringFormatter;
@@ -9,15 +9,15 @@ use crate::utils;
 /// Creates a module with the currently active Docker context
 ///
 /// Will display the Docker context if the following criteria are met:
-///     - There is a non-empty environment variable named DOCKER_HOST
-///     - Or there is a non-empty environment variable named DOCKER_CONTEXT
+///     - There is a non-empty environment variable named `DOCKER_HOST`
+///     - Or there is a non-empty environment variable named `DOCKER_CONTEXT`
 ///     - Or there is a file named `$HOME/.docker/config.json`
 ///     - Or a file named `$DOCKER_CONFIG/config.json`
 ///     - The file is JSON and contains a field named `currentContext`
-///     - The value of `currentContext` is not `default`
-///     - If multiple criterias are met, we use the following order to define the docker context:
-///     - DOCKER_HOST, DOCKER_CONTEXT, $HOME/.docker/config.json, $DOCKER_CONFIG/config.json
-///     - (This is the same order docker follows, as DOCKER_HOST and DOCKER_CONTEXT override the
+///     - The value of `currentContext` is not `default` or `desktop-linux`
+///     - If multiple criteria are met, we use the following order to define the docker context:
+///     - `DOCKER_HOST`, `DOCKER_CONTEXT`, $HOME/.docker/config.json, $`DOCKER_CONFIG/config.json`
+///     - (This is the same order docker follows, as `DOCKER_HOST` and `DOCKER_CONTEXT` override the
 ///     config)
 pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     let mut module = context.new_module("docker_context");
@@ -41,9 +41,9 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
     )
     .join("config.json");
 
-    let docker_context_env =
-        std::array::IntoIter::new(["DOCKER_MACHINE_NAME", "DOCKER_HOST", "DOCKER_CONTEXT"])
-            .find_map(|env| context.get_env(env));
+    let docker_context_env = ["DOCKER_MACHINE_NAME", "DOCKER_HOST", "DOCKER_CONTEXT"]
+        .into_iter()
+        .find_map(|env| context.get_env(env));
 
     let ctx = match docker_context_env {
         Some(data) => data,
@@ -56,6 +56,11 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
             parsed_json.get("currentContext")?.as_str()?.to_owned()
         }
     };
+
+    let default_contexts = ["default", "desktop-linux"];
+    if default_contexts.contains(&ctx.as_str()) || ctx.starts_with("unix://") {
+        return None;
+    }
 
     let parsed = StringFormatter::new(config.format).and_then(|formatter| {
         formatter
@@ -87,7 +92,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
 #[cfg(test)]
 mod tests {
     use crate::test::ModuleRenderer;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::fs::File;
     use std::io::{self, Write};
 
@@ -115,7 +120,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -144,7 +149,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -173,7 +178,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -199,7 +204,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -223,7 +228,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -249,7 +254,7 @@ mod tests {
 
         let config_content = "not valid json";
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -290,6 +295,24 @@ mod tests {
     }
 
     #[test]
+    fn test_docker_host_env_with_unix_path() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .env("DOCKER_HOST", "unix:///run/user/1001/podman/podman.sock")
+            .config(toml::toml! {
+                [docker_context]
+                only_with_files = false
+            })
+            .collect();
+        let expected = None;
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
     fn test_docker_context_env() -> io::Result<()> {
         let cfg_dir = tempfile::tempdir()?;
 
@@ -308,6 +331,42 @@ mod tests {
     }
 
     #[test]
+    fn test_docker_context_default() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .env("DOCKER_CONTEXT", "default")
+            .config(toml::toml! {
+                [docker_context]
+                only_with_files = false
+            })
+            .collect();
+        let expected = None;
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
+    fn test_docker_context_default_after_3_5() -> io::Result<()> {
+        let cfg_dir = tempfile::tempdir()?;
+
+        let actual = ModuleRenderer::new("docker_context")
+            .env("DOCKER_CONTEXT", "desktop-linux")
+            .config(toml::toml! {
+                [docker_context]
+                only_with_files = false
+            })
+            .collect();
+        let expected = None;
+
+        assert_eq!(expected, actual);
+
+        cfg_dir.close()
+    }
+
+    #[test]
     fn test_docker_context_overrides_config() -> io::Result<()> {
         let cfg_dir = tempfile::tempdir()?;
 
@@ -317,7 +376,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -346,7 +405,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 
@@ -378,7 +437,7 @@ mod tests {
             "currentContext": "starship"
         });
 
-        let mut docker_config = File::create(&cfg_file)?;
+        let mut docker_config = File::create(cfg_file)?;
         docker_config.write_all(config_content.to_string().as_bytes())?;
         docker_config.sync_all()?;
 

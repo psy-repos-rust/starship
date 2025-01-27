@@ -3,15 +3,17 @@ use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, io};
 
+use which::which;
+
 /* We use a two-phase init here: the first phase gives a simple command to the
 shell. This command evaluates a more complicated script using `source` and
 process substitution.
 
-Directly using `eval` on a shell script causes it to be evaluated in
-a single line, which sucks because things like comments will comment out the
-rest of the script, and you have to spam semicolons everywhere. By using
-source and process substitutions, we make it possible to comment and debug
-the init scripts.
+Directly using `eval` on a shell script without proper quoting causes it to be
+evaluated in a single line, which sucks because things like comments will
+comment out the rest of the script, and you have to spam semicolons
+everywhere. By using source and process substitutions, we make it possible to
+comment and debug the init scripts.
 
 In the future, this may be changed to just directly evaluating the initscript
 using whatever mechanism is available in the host shell--this two-phase solution
@@ -23,9 +25,11 @@ struct StarshipPath {
 }
 impl StarshipPath {
     fn init() -> io::Result<Self> {
-        Ok(Self {
-            native_path: env::current_exe()?,
-        })
+        let exe_name = option_env!("CARGO_PKG_NAME").unwrap_or("starship");
+
+        let native_path = which(exe_name).or_else(|_| env::current_exe())?;
+
+        Ok(Self { native_path })
     }
     fn str_path(&self) -> io::Result<&str> {
         let current_exe = self
@@ -40,15 +44,15 @@ impl StarshipPath {
         self.str_path().map(|p| shell_words::quote(p).into_owned())
     }
 
-    /// PowerShell specific path escaping
+    /// `PowerShell` specific path escaping
     fn sprint_pwsh(&self) -> io::Result<String> {
         self.str_path()
-            .map(|s| s.replace("'", "''"))
-            .map(|s| format!("'{}'", s))
+            .map(|s| s.replace('\'', "''"))
+            .map(|s| format!("'{s}'"))
     }
     /// Command Shell specific path escaping
     fn sprint_cmdexe(&self) -> io::Result<String> {
-        self.str_path().map(|s| format!("\"{}\"", s))
+        self.str_path().map(|s| format!("\"{s}\""))
     }
     fn sprint_posix(&self) -> io::Result<String> {
         // On non-Windows platform, return directly.
@@ -63,7 +67,7 @@ impl StarshipPath {
                 if e.kind() != io::ErrorKind::NotFound {
                     log::warn!("Failed to convert \"{}\" to unix path:\n{:?}", str_path, e);
                 }
-                // Failed to execute cygpath.exe means there're not inside cygwin evironment,return directly.
+                // Failed to execute cygpath.exe means there're not inside cygwin environment,return directly.
                 return self.sprint();
             }
         };
@@ -102,8 +106,13 @@ pub fn init_stub(shell_name: &str) -> io::Result<()> {
 
     match shell_basename {
         "bash" => print!(
-            /*
-             * The standard bash bootstrap is:
+            /* We now use the following bootstrap:
+             *      `eval -- "$(starship init bash --print-full-init)"`
+             * which works in any version of Bash from 3.2 to the latest
+             * version and also works in the POSIX mode.
+             *
+             * ----
+             * Historically, the standard bash bootstrap was:
              *      `source <(starship init bash --print-full-init)`
              *
              * Unfortunately there is an issue with bash 3.2 (the MacOS
@@ -125,34 +134,28 @@ pub fn init_stub(shell_name: &str) -> io::Result<()> {
              * with the standard bootstrap, whereas bash 4.1 appears to be
              * consistently compatible.
              *
-             * The upshot of all of this, is that we will use the standard
-             * bootstrap whenever the bash version is 4.1 or higher. Otherwise,
-             * we fall back to the `/dev/stdin` solution.
+             * We had been using the standard bootstrap whenever the bash
+             * version is 4.1 or higher. Otherwise, we fell back to the
+             * `/dev/stdin` solution.
+             *
+             * However, process substitutions <(...) are not supported in the
+             * POSIX mode of Bash <= 5.0, so we switch to the approach with
+             * `eval -- "$(...)"`.  The reason for not using `eval` seems to be
+             * explained at the top of this file, i.e., the script will be
+             * evaluated as if it is a single line, but that is caused by an
+             * improper quoting.
              *
              * More background can be found in these pull requests:
              * https://github.com/starship/starship/pull/241
              * https://github.com/starship/starship/pull/278
+             * https://github.com/starship/starship/issues/1674
+             * https://github.com/starship/starship/pull/5020
+             * https://github.com/starship/starship/issues/5382
              */
-            r#"
-            __main() {{
-                local major="${{BASH_VERSINFO[0]}}"
-                local minor="${{BASH_VERSINFO[1]}}"
-
-                if ((major > 4)) || {{ ((major == 4)) && ((minor >= 1)); }}; then
-                    source <({0} init bash --print-full-init)
-                else
-                    source /dev/stdin <<<"$({0} init bash --print-full-init)"
-                fi
-            }}
-            __main
-            unset -f __main
-            "#,
+            r#"eval -- "$({0} init bash --print-full-init)""#,
             starship.sprint_posix()?
         ),
-        "zsh" => print!(
-            r#"source <({} init zsh --print-full-init)"#,
-            starship.sprint_posix()?
-        ),
+        "zsh" => print_script(ZSH_INIT, &starship.sprint_posix()?),
         "fish" => print!(
             // Fish does process substitution with pipes and psub instead of bash syntax
             r#"source ({} init fish --print-full-init | psub)"#,
@@ -165,13 +168,13 @@ pub fn init_stub(shell_name: &str) -> io::Result<()> {
         "ion" => print!("eval $({} init ion --print-full-init)", starship.sprint()?),
         "elvish" => print!(
             r#"eval ({} init elvish --print-full-init | slurp)"#,
-            starship.sprint_posix()?
+            starship.sprint()?
         ),
         "tcsh" => print!(
             r#"eval `({} init tcsh --print-full-init)`"#,
             starship.sprint_posix()?
         ),
-        "nu" => print_script(NU_INIT, &StarshipPath::init()?.sprint_posix()?),
+        "nu" => print_script(NU_INIT, &StarshipPath::init()?.sprint()?),
         "xonsh" => print!(
             r#"execx($({} init xonsh --print-full-init))"#,
             starship.sprint_posix()?
@@ -179,7 +182,7 @@ pub fn init_stub(shell_name: &str) -> io::Result<()> {
         "cmd" => print_script(CMDEXE_INIT, &StarshipPath::init()?.sprint_cmdexe()?),
         _ => {
             eprintln!(
-                "{0} is not yet supported by starship.\n\
+                "{shell_basename} is not yet supported by starship.\n\
                  For the time being, we support the following shells:\n\
                  * bash\n\
                  * elvish\n\
@@ -193,9 +196,8 @@ pub fn init_stub(shell_name: &str) -> io::Result<()> {
                  * cmd\n\
                  \n\
                  Please open an issue in the starship repo if you would like to \
-                 see support for {0}:\n\
-                 https://github.com/starship/starship/issues/new\n",
-                shell_basename
+                 see support for {shell_basename}:\n\
+                 https://github.com/starship/starship/issues/new\n"
             )
         }
     };
@@ -213,7 +215,7 @@ pub fn init_main(shell_name: &str) -> io::Result<()> {
         "fish" => print_script(FISH_INIT, &starship_path.sprint_posix()?),
         "powershell" => print_script(PWSH_INIT, &starship_path.sprint_pwsh()?),
         "ion" => print_script(ION_INIT, &starship_path.sprint()?),
-        "elvish" => print_script(ELVISH_INIT, &starship_path.sprint_posix()?),
+        "elvish" => print_script(ELVISH_INIT, &starship_path.sprint()?),
         "tcsh" => print_script(TCSH_INIT, &starship_path.sprint_posix()?),
         "xonsh" => print_script(XONSH_INIT, &starship_path.sprint_posix()?),
         _ => {
@@ -229,7 +231,7 @@ pub fn init_main(shell_name: &str) -> io::Result<()> {
 
 fn print_script(script: &str, path: &str) {
     let script = script.replace("::STARSHIP::", path);
-    print!("{}", script);
+    print!("{script}");
 }
 
 /* GENERAL INIT SCRIPT NOTES

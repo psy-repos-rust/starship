@@ -1,16 +1,19 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct FillConfig<'a> {
     pub style: &'a str,
     pub symbol: &'a str,
     pub disabled: bool,
 }
 
-impl<'a> Default for FillConfig<'a> {
+impl Default for FillConfig<'_> {
     fn default() -> Self {
         FillConfig {
             style: "bold black",

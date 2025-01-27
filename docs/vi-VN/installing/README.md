@@ -1,11 +1,11 @@
-# 🚀 Cài đặt nâng cao
+# Cài đặt nâng cao
 
 Để cài đặt starship, bạn cần làm 2 thứ:
 
 1. Lấy tệp tin **starship** nhị phân về máy tính của bạn
 1. Nói với shell của bạn để sử dụng tệp tin starship nhị phân như là prompt của nó bằng việc chỉnh sửa những đoạn mã khởi tạo của nó
 
-Đối với đa số người dùng, các hướng dẫn trên [trang chính](/guide/#🚀-installation) sẽ làm việc tốt. Tuy nhiên, với một vài nền tảng đặc biệt hơn, các hướng dẫn khác nhau là cần thiết.
+Đối với đa số người dùng, hướng dẫn ở [trang chủ](../guide/#🚀-installation) là đủ. Tuy nhiên, với một vài nền tảng đặc biệt hơn, các hướng dẫn khác nhau là cần thiết.
 
 Có rất nhiều nền tảng bên ngoài, rằng chúng đã không khớp như trong tệp tin README.md, do đó đây là vài hướng dẫn cài đặt cho những nền tảng khác đến từ cộng đồng. Của bạn không có ở đây? Xin hãy thêm nó vào đây nếu bạn tìm ra nó!
 
@@ -13,7 +13,7 @@ Có rất nhiều nền tảng bên ngoài, rằng chúng đã không khớp nh�
 
 ### Yêu cầu
 
-Head over to the [Chocolatey installation page](https://chocolatey.org/install) and follow the instructions to install Chocolatey.
+Đi tới [trang cài đặt Chocolatey](https://chocolatey.org/install) và làm theo hướng dẫn để cài đặt Chocolatey.
 
 ### Cài đặt
 
@@ -32,20 +32,20 @@ pkg install getconf
 ### Cài đặt
 
 ```sh
-sh -c "$(curl -fsSL https://starship.rs/install.sh)" -- --bin-dir /data/data/com.termux/files/usr/bin
+curl -sS https://starship.rs/install.sh | sh -s -- --bin-dir /data/data/com.termux/files/usr/bin
 ```
 
 ## [Funtoo Linux](https://www.funtoo.org/Welcome)
 
 ### Cài đặt
 
-On Funtoo Linux, starship can be installed from [core-kit](https://github.com/funtoo/core-kit/tree/1.4-release/app-shells/starship) via Portage:
+Trên Funtoo Linux, starship có thể cài đặt từ [core-kit](https://github.com/funtoo/core-kit/tree/1.4-release/app-shells/starship) qua Portage:
 
 ```sh
 emerge app-shells/starship
 ```
 
-## [Nix](https://nixos.wiki/wiki/Nix)
+## [Nix](https://wiki.nixos.org/wiki/Nix)
 
 ### Lấy tệp tin nhị phân
 
@@ -63,8 +63,7 @@ Kích hoạt mô đun `programs.starship` trong tệp `home.nix` của bạn, v�
 {
   programs.starship = {
     enable = true;
-    enableZshIntegration = true;
-    # Cấu hình viết vào ~/.config/starship.toml
+    # Configuration written to ~/.config/starship.toml
     settings = {
       # add_newline = false;
 

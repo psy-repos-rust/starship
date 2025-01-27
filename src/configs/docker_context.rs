@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct DockerContextConfig<'a> {
     pub symbol: &'a str,
     pub style: &'a str,
@@ -15,7 +18,7 @@ pub struct DockerContextConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for DockerContextConfig<'a> {
+impl Default for DockerContextConfig<'_> {
     fn default() -> Self {
         DockerContextConfig {
             symbol: "🐳 ",

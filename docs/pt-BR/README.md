@@ -1,10 +1,14 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: O prompt minimalista, extremamente rápido e infinitamente personalizável para qualquer shell!
-actionText: Primeiros passos →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text:
+  tagline: O prompt minimalista, extremamente rápido e infinitamente personalizável para qualquer shell!
+  actions:
+    - 
+      theme: brand
+      text: Primeiros passos →
+      link: ./guide/
 features:
   - 
     title: Compatibilidade primeiro
@@ -21,12 +25,24 @@ metaTitle: "Starship: Cross-Shell Prompt"
 description: O Starship é o prompt minimalista, extremamente rápido e extremamente personalizável para qualquer shell! Mostra as informações que você precisa, mantendo-se elegante e minimalista. Instalação rápida disponível para Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd e PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Pré-requisitos
 
@@ -37,17 +53,18 @@ description: O Starship é o prompt minimalista, extremamente rápido e extremam
 1. Instale o binário do **starship**:
 
 
-   #### Instalar a última versão
+   #### Instalando a última versão
 
    Com o Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
+
    Para atualizar o Starship de maneira manual, execute novamente o script acima. Isto irá substituir a versão atual sem alterar as configurações do Starship.
 
 
-   #### Instalar via Gerenciador de Pacotes
+   #### Instalar via gerenciador de pacotes
 
    Com o [Homebrew](https://brew.sh/):
 
@@ -55,13 +72,13 @@ description: O Starship é o prompt minimalista, extremamente rápido e extremam
    brew install starship
    ```
 
-   Com o [Scoop](https://scoop.sh):
+   Com o [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
-1. Adicione o script de inicialização ao arquivo de configuração do shell:
+1. Adicione o script de inicialização no arquivo de configuração do seu shell:
 
 
    #### Bash
@@ -99,7 +116,7 @@ description: O Starship é o prompt minimalista, extremamente rápido e extremam
 
    #### Powershell
 
-   Adicione o comando a seguir ao final do arquivo `Microsoft.PowerShell_profile.ps1`. Você pode conferir a localização do arquivo consultando a varável `$PROFILE` no PowerShell. Normalmente o caminho é  `~\Documentos\PowerShell\Microsoft.PowerShell_profile.ps1` ou `~/.config/powershell/Microsoft.PowerShell_profile.ps1` no -Nix.
+   Adicione o comando a seguir ao final do arquivo `Microsoft.PowerShell_profile.ps1`. Você pode checar a localização deste arquivo consultando a variável `$PROFILE` no PowerShell. Normalmente o caminho é  `~\Documentos\PowerShell\Microsoft.PowerShell_profile.ps1` ou `~/.config/powershell/Microsoft.PowerShell_profile.ps1` no -Nix.
 
    ```sh
    Invoke-Expression (&starship init powershell)
@@ -119,7 +136,11 @@ description: O Starship é o prompt minimalista, extremamente rápido e extremam
 
    #### Elvish
 
-   ::: warning Apenas a versão elvish v0.17 ou superior é suportada. :::
+   ::: warning
+
+   Apenas elvish v0.18 ou superior é suportado.
+
+   :::
 
    Adicione o comando a seguir ao final do arquivo `~/.elvish/rc.elv`:
 
@@ -143,15 +164,17 @@ description: O Starship é o prompt minimalista, extremamente rápido e extremam
 
    #### Nushell
 
-   ::: Atenção Isto vai mudar no futuro. Apenas a versão v0.33 do nu ou superior é suportada. Adicione o seguinte no seu arquivo de configuração nu. Você pode verificar o local deste arquivo rodando `config path` in nu.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Isto irá mudar no futuro. Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
