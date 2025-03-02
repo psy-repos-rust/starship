@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct RubyConfig<'a> {
     pub format: &'a str,
     pub version_format: &'a str,
@@ -16,7 +19,7 @@ pub struct RubyConfig<'a> {
     pub detect_variables: Vec<&'a str>,
 }
 
-impl<'a> Default for RubyConfig<'a> {
+impl Default for RubyConfig<'_> {
     fn default() -> Self {
         RubyConfig {
             format: "via [$symbol($version )]($style)",

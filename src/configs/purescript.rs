@@ -1,9 +1,12 @@
-use crate::config::ModuleConfig;
+use serde::{Deserialize, Serialize};
 
-use serde::Serialize;
-use starship_module_config_derive::ModuleConfig;
-
-#[derive(Clone, ModuleConfig, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[cfg_attr(
+    feature = "config-schema",
+    derive(schemars::JsonSchema),
+    schemars(deny_unknown_fields)
+)]
+#[serde(default)]
 pub struct PureScriptConfig<'a> {
     pub format: &'a str,
     pub version_format: &'a str,
@@ -15,7 +18,7 @@ pub struct PureScriptConfig<'a> {
     pub detect_folders: Vec<&'a str>,
 }
 
-impl<'a> Default for PureScriptConfig<'a> {
+impl Default for PureScriptConfig<'_> {
     fn default() -> Self {
         PureScriptConfig {
             format: "via [$symbol($version )]($style)",
@@ -24,7 +27,7 @@ impl<'a> Default for PureScriptConfig<'a> {
             style: "bold white",
             disabled: false,
             detect_extensions: vec!["purs"],
-            detect_files: vec!["spago.dhall"],
+            detect_files: vec!["spago.dhall", "spago.yaml", "spago.lock"],
             detect_folders: vec![],
         }
     }

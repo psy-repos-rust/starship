@@ -1,4 +1,4 @@
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 use crate::formatter::VersionFormatter;
 
 use crate::configs::rlang::RLangConfig;
@@ -73,7 +73,7 @@ fn parse_r_version(r_version: &str) -> Option<String> {
 mod tests {
     use super::parse_r_version;
     use crate::test::ModuleRenderer;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::fs;
     use std::fs::File;
     use std::io;
@@ -133,9 +133,9 @@ https://www.gnu.org/licenses/."#;
     }
 
     #[test]
-    fn folder_with_rprofile_files() -> io::Result<()> {
+    fn folder_with_description_files() -> io::Result<()> {
         let dir = tempfile::tempdir()?;
-        File::create(dir.path().join(".Rprofile"))?.sync_all()?;
+        File::create(dir.path().join("DESCRIPTION"))?.sync_all()?;
         check_r_render(&dir);
         dir.close()
     }
@@ -144,7 +144,7 @@ https://www.gnu.org/licenses/."#;
     fn folder_with_rproj_user_folder() -> io::Result<()> {
         let dir = tempfile::tempdir()?;
         let rprofile = dir.path().join(".Rproj.user");
-        fs::create_dir_all(&rprofile)?;
+        fs::create_dir_all(rprofile)?;
         check_r_render(&dir);
         dir.close()
     }

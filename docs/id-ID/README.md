@@ -1,36 +1,52 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: Prompt yang minimal, super cepat, dan dapat disesuaikan tanpa batas untuk shell apa pun!
-actionText: Mari Mulai →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text:
+  tagline: Prompt yang minimal, super cepat, dan dapat disesuaikan tanpa batas untuk shell apa pun!
+  actions:
+    - 
+      theme: brand
+      text: Mari Mulai →
+      link: ./guide/
 features:
   - 
-    title: Mengutamakan Kompabilitas
-    details: Dapat bekerja di shells yang paling biasa dengan sistem operasi yang paling biasa. Bisa digunakan di mana saja!
+    title: Kompatibilitas Yang Utama
+    details: Dapat berfungsi di shells standar dengan sistem operasi yang paling biasa. Pakai di mana saja!
   - 
-    title: Dibuat Dengan Rust
+    title: Dibuat dengan Rust
     details: Menggunakan kecepatan dan keamanan dari Rust, untuk membuat prompt kamu bekerja secepat dan seandal mungkin.
   - 
     title: Dapat Dikustomisasi
-    details: Semua detail kecil yang ada dapat kamu atur sesukamu, entah untuk membuatnya sebagai prompt yang seminimal mungkin atau mungkin kaya akan fitur sesuai keinginanmu.
+    details: Kamu dapat mengatur semua detail kecil dengan sesukamu, entah itu untuk membuatnya sebagai prompt yang seminimal mungkin atau kaya akan fitur yang kamu mau.
 footer: Berlisensi ISC | Hak Cipta © 2019-sekarang Kontributor Starship
 #Used for the description meta tag, for SEO
 metaTitle: "Starship: Prompt Lintas Shell"
-description: Starship merupakan sebuah prompt yang minimal, super cepat, dan sangat bisa untuk dikustomisasi untuk shell apapun! Bisa menampilkan informasi yang kamu butuhkan, namun tetap bisa tampil dengan ramping dan minimal. Pemasangan singkat tersedia untuk Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, dan PowerShell.
+description: Starship merupakan sebuah prompt yang minimal, super cepat, dan sangat bisa untuk dikustomisasi untuk shell apapun! Bisa menampilkan informasi yang kamu butuhkan, namun tetap bisa tampil dengan ramping dan minimal. Instalasi sederhana tersedia untuk Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, dan PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Prasyarat
 
-- [Nerd Font](https://www.nerdfonts.com/) yang telah terinstalasi dan telah diaktifkan di dalam terminal.
+- [Nerd Font](https://www.nerdfonts.com/) yang sudah terpasang dan berjalan di dalam terminalmu.
 
 ### Instalasi Sederhana
 
@@ -42,9 +58,10 @@ description: Starship merupakan sebuah prompt yang minimal, super cepat, dan san
    Dengan Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
-   Untuk memperbarui Starship, jalankan kembali skrip di atas. Hal ini dapat memperbarui versi yang terpasang tanpa mengubah konfigurasi Starship.
+
+   Untuk memperbarui Starship, jalankan ulang skrip di atas. Hal ini akan memperbarui versi yang terpasang tanpa mengubah konfigurasi Starship.
 
 
    #### Pasang Melalui Package Manager
@@ -55,10 +72,10 @@ description: Starship merupakan sebuah prompt yang minimal, super cepat, dan san
    brew install starship
    ```
 
-   Dengan [Scoop](https://scoop.sh):
+   With [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Tambahkan skrip init ke dalam file konfigurasi Shell:
@@ -119,7 +136,11 @@ description: Starship merupakan sebuah prompt yang minimal, super cepat, dan san
 
    #### Elvish
 
-   ::: warning Hanya elvish v0.17 atau versi yang lebih baru yang mendapat dukungan pengembangan. :::
+   ::: warning
+
+   Hanya elvish v0.18 atau versi yang lebih baru yang mendapat dukungan pengembangan.
+
+   :::
 
    Tambahkan skrip berikut pada baris akhir `~/.elvish/rc.elv`:
 
@@ -143,15 +164,17 @@ description: Starship merupakan sebuah prompt yang minimal, super cepat, dan san
 
    #### Nushell
 
-   ::: peringatan Hal ini dapat berubah di kemudian hari. Hanya nu versi v0.33 atau versi terbaru yang mendapat dukungan pengembangan. ::: Tambahkan skrip berikut ke dalam file konfigurasi nu. Lokasi dari file ini dapat dicek dengan menjalankan `config path` pada nu.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Hal ini dapat berubah di kemudian hari. Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
@@ -168,7 +191,7 @@ description: Starship merupakan sebuah prompt yang minimal, super cepat, dan san
 
    #### Cmd
 
-   You need to use [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) with Cmd. Add the following to a file `starship.lua` and place this file in Clink scripts directory:
+   Kamu perlu menggunakan [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) pada Cmd. Tambahkan baris berikut ke dalam `starship.lua` lalu taruhlah file berikut ke dalam direktori Clink:
 
    ```lua
    -- starship.lua

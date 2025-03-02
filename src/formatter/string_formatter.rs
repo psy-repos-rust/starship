@@ -1,4 +1,3 @@
-use ansi_term::Style;
 use pest::error::Error as PestError;
 use rayon::prelude::*;
 use std::borrow::Cow;
@@ -6,7 +5,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt;
 
-use crate::config::parse_style_string;
+use crate::config::{parse_style_string, Style};
 use crate::context::{Context, Shell};
 use crate::segment::Segment;
 
@@ -21,7 +20,7 @@ enum VariableValue<'a> {
     Meta(Vec<FormatElement<'a>>),
 }
 
-impl<'a> Default for VariableValue<'a> {
+impl Default for VariableValue<'_> {
     fn default() -> Self {
         VariableValue::Plain(Cow::Borrowed(""))
     }
@@ -32,17 +31,17 @@ type VariableMapType<'a> =
 type StyleVariableMapType<'a> =
     BTreeMap<String, Option<Result<Cow<'a, str>, StringFormatterError>>>;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StringFormatterError {
     Custom(String),
-    Parse(PestError<Rule>),
+    Parse(Box<PestError<Rule>>),
 }
 
 impl fmt::Display for StringFormatterError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Custom(error) => write!(f, "{}", error),
-            Self::Parse(error) => write!(f, "{}", error),
+            Self::Custom(error) => write!(f, "{error}"),
+            Self::Parse(error) => write!(f, "{error}"),
         }
     }
 }
@@ -62,7 +61,7 @@ pub struct StringFormatter<'a> {
 }
 
 impl<'a> StringFormatter<'a> {
-    /// Creates an instance of StringFormatter from a format string
+    /// Creates an instance of `StringFormatter` from a format string
     ///
     /// This method will throw an Error when the given format string fails to parse.
     pub fn new(format: &'a str) -> Result<Self, StringFormatterError> {
@@ -88,7 +87,7 @@ impl<'a> StringFormatter<'a> {
         })
     }
 
-    /// A StringFormatter that does no formatting, parse just returns the raw text
+    /// A `StringFormatter` that does no formatting, parse just returns the raw text
     pub fn raw(text: &'a str) -> Self {
         Self {
             format: vec![FormatElement::Text(text.into())],
@@ -103,14 +102,15 @@ impl<'a> StringFormatter<'a> {
     /// parameter and returns the one of the following values:
     ///
     /// - `None`: This variable will be reserved for further mappers. If it is `None` when
-    /// `self.parse()` is called, it will be dropped.
+    ///   `self.parse()` is called, it will be dropped.
     ///
     /// - `Some(Err(StringFormatterError))`: This variable will throws `StringFormatterError` when
-    /// `self.parse()` is called. Return this if some fatal error occurred and the format string
-    /// should not be rendered.
+    ///   `self.parse()` is called. Return this if some fatal error occurred and the format string
+    ///   should not be rendered.
     ///
     /// - `Some(Ok(_))`: The value of this variable will be displayed in the format string.
     ///
+    #[must_use]
     pub fn map<T, M>(mut self, mapper: M) -> Self
     where
         T: Into<Cow<'a, str>>,
@@ -131,6 +131,7 @@ impl<'a> StringFormatter<'a> {
     ///
     /// See `StringFormatter::map` for description on the parameters.
     ///
+    #[must_use]
     pub fn map_no_escaping<T, M>(mut self, mapper: M) -> Self
     where
         T: Into<Cow<'a, str>>,
@@ -152,6 +153,7 @@ impl<'a> StringFormatter<'a> {
     /// the format strings of meta-variables can be cached properly.
     ///
     /// See `StringFormatter::map` for description on the parameters.
+    #[must_use]
     pub fn map_meta<M>(mut self, mapper: M) -> Self
     where
         M: Fn(&str, &BTreeSet<String>) -> Option<&'a str> + Sync,
@@ -193,6 +195,7 @@ impl<'a> StringFormatter<'a> {
     /// Maps variable name to an array of segments
     ///
     /// See `StringFormatter::map` for description on the parameters.
+    #[must_use]
     pub fn map_variables_to_segments<M>(mut self, mapper: M) -> Self
     where
         M: Fn(&str) -> Option<Result<Vec<Segment>, StringFormatterError>> + Sync,
@@ -209,6 +212,7 @@ impl<'a> StringFormatter<'a> {
     /// Maps variable name in a style string to its value
     ///
     /// See `StringFormatter::map` for description on the parameters.
+    #[must_use]
     pub fn map_style<T, M>(mut self, mapper: M) -> Self
     where
         T: Into<Cow<'a, str>>,
@@ -218,7 +222,7 @@ impl<'a> StringFormatter<'a> {
             .par_iter_mut()
             .filter(|(_, value)| value.is_none())
             .for_each(|(key, value)| {
-                *value = mapper(key).map(|var| var.map(std::convert::Into::into));
+                *value = mapper(key).map(|var| var.map(Into::into));
             });
         self
     }
@@ -240,7 +244,7 @@ impl<'a> StringFormatter<'a> {
             style_variables: &'a StyleVariableMapType<'a>,
             context: Option<&Context>,
         ) -> Result<Vec<Segment>, StringFormatterError> {
-            let style = parse_style(textgroup.style, style_variables);
+            let style = parse_style(textgroup.style, style_variables, context);
             parse_format(
                 textgroup.format,
                 style.transpose()?,
@@ -253,6 +257,7 @@ impl<'a> StringFormatter<'a> {
         fn parse_style<'a>(
             style: Vec<StyleElement>,
             variables: &'a StyleVariableMapType<'a>,
+            context: Option<&Context>,
         ) -> Option<Result<Style, StringFormatterError>> {
             let style_strings = style
                 .into_iter()
@@ -271,7 +276,7 @@ impl<'a> StringFormatter<'a> {
                 .map(|style_strings| {
                     let style_string: String =
                         style_strings.iter().flat_map(|s| s.chars()).collect();
-                    parse_style_string(&style_string)
+                    parse_style_string(&style_string, context)
                 })
                 .transpose()
         }
@@ -287,12 +292,17 @@ impl<'a> StringFormatter<'a> {
                 .into_iter()
                 .map(|el| {
                     match el {
-                        FormatElement::Text(text) => Ok(Segment::from_text(style, text)),
+                        FormatElement::Text(text) => Ok(Segment::from_text(
+                            style,
+                            shell_prompt_escape(
+                                text,
+                                match context {
+                                    None => Shell::Unknown,
+                                    Some(c) => c.shell,
+                                },
+                            ),
+                        )),
                         FormatElement::TextGroup(textgroup) => {
-                            let textgroup = TextGroup {
-                                format: textgroup.format,
-                                style: textgroup.style,
-                            };
                             parse_textgroup(textgroup, variables, style_variables, context)
                         }
                         FormatElement::Variable(name) => variables
@@ -342,13 +352,13 @@ impl<'a> StringFormatter<'a> {
                                     variables
                                         .get(var.as_ref())
                                         // false if can't find the variable in format string
-                                        .map_or(false, |map_result| {
+                                        .is_some_and(|map_result| {
                                             let map_result = map_result.as_ref();
                                             map_result
                                                 .and_then(|result| result.as_ref().ok())
                                                 // false if the variable is None or Err, or a meta variable
                                                 // that shouldn't show
-                                                .map_or(false, |result| match result {
+                                                .is_some_and(|result| match result {
                                                     // If the variable is a meta variable, also
                                                     // check the format string inside it.
                                                     VariableValue::Meta(meta_elements) => {
@@ -397,13 +407,13 @@ impl<'a> StringFormatter<'a> {
     }
 }
 
-impl<'a> VariableHolder<String> for StringFormatter<'a> {
+impl VariableHolder<String> for StringFormatter<'_> {
     fn get_variables(&self) -> BTreeSet<String> {
         self.variables.keys().cloned().collect()
     }
 }
 
-impl<'a> StyleVariableHolder<String> for StringFormatter<'a> {
+impl StyleVariableHolder<String> for StringFormatter<'_> {
     fn get_style_variables(&self) -> BTreeSet<String> {
         self.style_variables.keys().cloned().collect()
     }
@@ -433,7 +443,7 @@ where
 {
     // Handle other interpretable characters
     match shell {
-        // Bash might interepret baskslashes, backticks and $
+        // Bash might interpret backslashes, backticks and $
         // see #658 for more details
         Shell::Bash => text
             .into()
@@ -451,7 +461,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
 
     // match_next(result: IterMut<Segment>, value, style)
     macro_rules! match_next {
@@ -472,7 +482,7 @@ mod tests {
         let style = Some(Color::Red.bold());
 
         let formatter = StringFormatter::new(FORMAT_STR).unwrap().map(empty_mapper);
-        let result = formatter.parse(style, None).unwrap();
+        let result = formatter.parse(style.map(Into::into), None).unwrap();
         let mut result_iter = result.iter();
         match_next!(result_iter, "text", style);
     }
@@ -523,7 +533,7 @@ mod tests {
 
         let formatter = StringFormatter::new(FORMAT_STR)
             .unwrap()
-            .map(|variable| Some(Ok(format!("${{{}}}", variable))));
+            .map(|variable| Some(Ok(format!("${{{variable}}}"))));
         let result = formatter.parse(None, None).unwrap();
         let mut result_iter = result.iter();
         match_next!(result_iter, "${env:PWD}", None);
@@ -531,12 +541,12 @@ mod tests {
 
     #[test]
     fn test_escaped_chars() {
-        const FORMAT_STR: &str = r#"\\\[\$text\]\(red bold\)"#;
+        const FORMAT_STR: &str = r"\\\[\$text\]\(red bold\)";
 
         let formatter = StringFormatter::new(FORMAT_STR).unwrap().map(empty_mapper);
         let result = formatter.parse(None, None).unwrap();
         let mut result_iter = result.iter();
-        match_next!(result_iter, r#"\[$text](red bold)"#, None);
+        match_next!(result_iter, r"\[$text](red bold)", None);
     }
 
     #[test]
@@ -547,11 +557,35 @@ mod tests {
         let inner_style = Some(Color::Blue.normal());
 
         let formatter = StringFormatter::new(FORMAT_STR).unwrap().map(empty_mapper);
-        let result = formatter.parse(outer_style, None).unwrap();
+        let result = formatter.parse(outer_style.map(Into::into), None).unwrap();
         let mut result_iter = result.iter();
         match_next!(result_iter, "outer ", outer_style);
         match_next!(result_iter, "middle ", middle_style);
         match_next!(result_iter, "inner", inner_style);
+    }
+
+    #[test]
+    fn test_style_variable_nested() {
+        const STYLE_VAR_NAME: &str = "style";
+
+        let format_string = format!("[[text](${STYLE_VAR_NAME})](blue)");
+        let inner_style = Some(Color::Red.bold());
+
+        let formatter = StringFormatter::new(&format_string)
+            .unwrap()
+            .map_style(|variable| match variable {
+                STYLE_VAR_NAME => Some(Ok("red bold".to_owned())),
+                _ => None,
+            });
+
+        assert_eq!(
+            BTreeSet::from([STYLE_VAR_NAME.into()]),
+            formatter.get_style_variables()
+        );
+
+        let result = formatter.parse(None, None).unwrap();
+        let mut result_iter = result.iter();
+        match_next!(result_iter, "text", inner_style);
     }
 
     #[test]
@@ -579,9 +613,9 @@ mod tests {
 
         let mut segments: Vec<Segment> = Vec::new();
         segments.extend(Segment::from_text(None, "styless"));
-        segments.extend(Segment::from_text(styled_style, "styled"));
+        segments.extend(Segment::from_text(styled_style.map(Into::into), "styled"));
         segments.extend(Segment::from_text(
-            styled_no_modifier_style,
+            styled_no_modifier_style.map(Into::into),
             "styled_no_modifier",
         ));
 

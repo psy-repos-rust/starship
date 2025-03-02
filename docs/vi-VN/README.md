@@ -1,10 +1,14 @@
 ---
-home: true
-heroImage: /logo.svg
-heroText:
-tagline: Nhỏ gọn, cực nhanh, và khả năng tuỳ chỉnh vô hạn prompt cho bất kì shell nào!
-actionText: Bắt đầu →
-actionLink: ./guide/
+layout: home
+hero:
+  image: /logo.svg
+  text:
+  tagline: Nhỏ gọn, cực nhanh, và khả năng tuỳ chỉnh vô hạn prompt cho bất kì shell nào!
+  actions:
+    - 
+      theme: brand
+      text: Bắt đầu →
+      link: ./guide/
 features:
   - 
     title: Khả năng tương thích
@@ -18,19 +22,31 @@ features:
 footer: Cấp phép bởi ISC | Bản quyền © 2019-nay Starship Contributors
 #Used for the description meta tag, for SEO
 metaTitle: "Starship: Cross-Shell Prompt"
-description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biến mạnh mẽ cho bất kì shell nào! Hiển thị thông tin bạn cần, trong khi vẫn giữ cho đẹp và nhỏ gọn. Quick installation available for Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, and PowerShell.
+description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biến mạnh mẽ cho bất kì shell nào! Hiển thị thông tin bạn cần, trong khi vẫn giữ cho đẹp và nhỏ gọn. Hỗ trợ cài đặt nhanh cho Bash, Fish, ZSH, Ion, Tcsh, Elvish, Nu, Xonsh, Cmd, và PowerShell.
 ---
 
-<div class="center">
-  <video class="demo-video" muted autoplay loop playsinline>
-    <source src="/demo.webm" type="video/webm">
-    <source src="/demo.mp4" type="video/mp4">
-  </video>
-</div>
+<script setup>
+import { onMounted } from 'vue'
+
+onMounted(() => {
+  const urlParams = new URLSearchParams(window.location.search)
+  if (urlParams.has('uwu') || urlParams.has('kawaii')) {
+    const img = document.querySelector('.VPHero .VPImage.image-src')
+    img.classList.add('uwu')
+    img.src = '/logo-uwu.png'
+    img.alt = 'Kawaii Starship Logo by @sawaratsuki1004'
+  }
+})
+</script>
+
+<video class="demo-video" muted autoplay loop playsinline>
+  <source src="/demo.webm" type="video/webm">
+  <source src="/demo.mp4" type="video/mp4">
+</video>
 
 ### Yêu cầu
 
-- A [Nerd Font](https://www.nerdfonts.com/) installed and enabled in your terminal.
+- Đã cài đặt một [Nerd Font](https://www.nerdfonts.com/) và được kích hoạt trong terminal của bạn.
 
 ### Cài đặt nhanh chóng
 
@@ -42,8 +58,9 @@ description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biế
    Với Shell:
 
    ```sh
-   sh -c "$(curl -fsSL https://starship.rs/install.sh)"
+   curl -sS https://starship.rs/install.sh | sh
    ```
+
    Để cập nhật chính Starship, hãy chạy lại đoạn script bên trên. Nó sẽ thay thế phiên bản hiện tại mà không hề thay đổi gì những cài đặt của Starship trước đó.
 
 
@@ -55,10 +72,10 @@ description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biế
    brew install starship
    ```
 
-   Với [Scoop](https://scoop.sh):
+   Với [Winget](https://github.com/microsoft/winget-cli):
 
    ```powershell
-   scoop install starship
+   winget install starship
    ```
 
 1. Thêm đoạn mã khởi tạo vào tệp tin cấu hình shell của bạn:
@@ -99,7 +116,7 @@ description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biế
 
    #### Powershell
 
-   Thêm vào cuối tệp tin `Microsoft.PowerShell_profile.ps1`. Bạn có thể kiểm tra vị trí tệp tin này bằng việc truy xuất biến `$PROFILE` trong PowerShell. Thông thường, đường dẫn là `~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` hoặc `~/.config/powershell/Microsoft.PowerShell_profile.ps1` trên -Nix.
+   Thêm đoạn sau vào cuối tệp tin `Microsoft.PowerShell_profile.ps1`. Bạn có thể kiểm tra vị trí tệp tin này bằng việc truy xuất biến `$PROFILE` trong PowerShell. Thông thường, đường dẫn là `~\Documents\PowerShell\Microsoft.PowerShell_profile.ps1` hoặc `~/.config/powershell/Microsoft.PowerShell_profile.ps1` trên -Nix.
 
    ```sh
    Invoke-Expression (&starship init powershell)
@@ -108,18 +125,22 @@ description: Starship là prompt nhỏ, cực nhanh, và khả năng tuỳ biế
 
    #### Ion
 
-   Thêm vào cuối tệp tin `~/.config/ion/initrc`:
+   Thêm đoạn sau vào cuối tệp tin `~/.config/ion/initrc`:
 
    ```sh
    # ~/.config/ion/initrc
 
-eval $(starship init ion)   
+   eval $(starship init ion)
    ```
 
 
    #### Elvish
 
-   ::: warning Chỉ elvish v0.17 hoặc cao hơn được hỗ trợ. :::
+   ::: warning
+
+   Chỉ hỗ trợ elvish từ phiên bản 0.18 trở lên.
+
+   :::
 
    Thêm đoạn sau vào cuối tệp tin `~/.elvish/rc.elv`:
 
@@ -132,7 +153,7 @@ eval $(starship init ion)
 
    #### Tcsh
 
-   Thêm đoạn dưới vào cuối file `~/.tcshrc`:
+   Thêm đoạn sau vào cuối tệp tin `~/.tcshrc`:
 
    ```sh
    # ~/.tcshrc
@@ -143,15 +164,17 @@ eval $(starship init ion)
 
    #### Nushell
 
-   ::: warning This will change in the future. Chỉ có nu phiên bản v. 033 hoặc cao hơn được hỗ trợ. ::: Add the following to your nu config file. Bạn có thể kiểm tra vị trí của cái file này bằng cách chạy `đường dẫn cấu hình` trong nu.
+   ::: warning
 
-   ```toml
-   startup = [
-     "mkdir ~/.cache/starship",
-     "starship init nu | save ~/.cache/starship/init.nu",
-     "source ~/.cache/starship/init.nu",
-   ]
-   prompt = "starship_prompt"
+   Điều này có thể thay đổi trong tương lai. Only Nushell v0.96+ is supported.
+
+   :::
+
+   Add the following to the end of your Nushell configuration (find it by running `$nu.config-path` in Nushell):
+
+   ```sh
+   mkdir ($nu.data-dir | path join "vendor/autoload")
+   starship init nu | save -f ($nu.data-dir | path join "vendor/autoload/starship.nu")
    ```
 
 
@@ -168,7 +191,7 @@ eval $(starship init ion)
 
    #### Cmd
 
-   You need to use [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) with Cmd. Add the following to a file `starship.lua` and place this file in Clink scripts directory:
+   Bạn cần phải dùng [Clink](https://chrisant996.github.io/clink/clink.html) (v1.2.30+) với Cmd. Thêm đoạn mã sau vào tệp tin `starship.lua` và đặt tệp tin này vào địa chỉ Clink scripts:
 
    ```lua
    -- starship.lua

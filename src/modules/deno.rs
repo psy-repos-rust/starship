@@ -1,4 +1,4 @@
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 
 use crate::configs::deno::DenoConfig;
 use crate::formatter::StringFormatter;
@@ -70,7 +70,7 @@ fn parse_deno_version(deno_version: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use crate::test::ModuleRenderer;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::fs::File;
     use std::io;
 
@@ -97,6 +97,16 @@ mod tests {
     fn folder_with_deno_jsonc() -> io::Result<()> {
         let dir = tempfile::tempdir()?;
         File::create(dir.path().join("deno.jsonc"))?.sync_all()?;
+        let actual = ModuleRenderer::new("deno").path(dir.path()).collect();
+        let expected = Some(format!("via {}", Color::Green.bold().paint("🦕 v1.8.3 ")));
+        assert_eq!(expected, actual);
+        dir.close()
+    }
+
+    #[test]
+    fn folder_with_deno_lock() -> io::Result<()> {
+        let dir = tempfile::tempdir()?;
+        File::create(dir.path().join("deno.lock"))?.sync_all()?;
         let actual = ModuleRenderer::new("deno").path(dir.path()).collect();
         let expected = Some(format!("via {}", Color::Green.bold().paint("🦕 v1.8.3 ")));
         assert_eq!(expected, actual);

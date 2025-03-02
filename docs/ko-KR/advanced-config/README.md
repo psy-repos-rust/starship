@@ -1,4 +1,4 @@
-# Advanced Configuration
+# 고급 설정
 
 While Starship is a versatile shell, sometimes you need to do more than edit `starship.toml` to get it to do certain things. This page details some of the more advanced configuration techniques used in starship.
 
@@ -7,6 +7,98 @@ While Starship is a versatile shell, sometimes you need to do more than edit `st
 The configurations in this section are subject to change in future releases of Starship.
 
 :::
+
+## TransientPrompt in PowerShell
+
+It is possible to replace the previous-printed prompt with a custom string. This is useful in cases where all the prompt information is not always needed. To enable this, run `Enable-TransientPrompt` in the shell session. To make it permanent, put this statement in your `$PROFILE`. Transience can be disabled on-the-fly with `Disable-TransientPrompt`.
+
+By default, the left side of input gets replaced with `>`. To customize this, define a new function called `Invoke-Starship-TransientFunction`. For example, to display Starship's `character` module here, you would do
+
+```powershell
+function Invoke-Starship-TransientFunction {
+  &starship module character
+}
+
+Invoke-Expression (&starship init powershell)
+
+Enable-TransientPrompt
+```
+
+## TransientPrompt and TransientRightPrompt in Cmd
+
+Clink allows you to replace the previous-printed prompt with custom strings. This is useful in cases where all the prompt information is not always needed. To enable this, run `clink set prompt.transient <value>` where \<value\> can be one of:
+
+- `always`: always replace the previous prompt
+- `same_dir`: replace the previous prompt only if the working directory is same
+- `off`: do not replace the prompt (i.e. turn off transience)
+
+You need to do this only once. Make the following changes to your `starship.lua` to customize what gets displayed on the left and on the right:
+
+- By default, the left side of input gets replaced with `>`. To customize this, define a new function called `starship_transient_prompt_func`. This function receives the current prompt as a string that you can utilize. For example, to display Starship's `character` module here, you would do
+
+```lua
+function starship_transient_prompt_func(prompt)
+  return io.popen("starship module character"
+    .." --keymap="..rl.getvariable('keymap')
+  ):read("*a")
+end
+load(io.popen('starship init cmd'):read("*a"))()
+```
+
+- By default, the right side of input is empty. To customize this, define a new function called `starship_transient_rprompt_func`. This function receives the current prompt as a string that you can utilize. For example, to display the time at which the last command was started here, you would do
+
+```lua
+function starship_transient_rprompt_func(prompt)
+  return io.popen("starship module time"):read("*a")
+end
+load(io.popen('starship init cmd'):read("*a"))()
+```
+
+## TransientPrompt and TransientRightPrompt in Fish
+
+It is possible to replace the previous-printed prompt with a custom string. This is useful in cases where all the prompt information is not always needed. To enable this, run `enable_transience` in the shell session. To make it permanent, put this statement in your `~/.config/fish/config.fish`. Transience can be disabled on-the-fly with `disable_transience`.
+
+Note that in case of Fish, the transient prompt is only printed if the commandline is non-empty, and syntactically correct.
+
+- By default, the left side of input gets replaced with a bold-green `❯`. To customize this, define a new function called `starship_transient_prompt_func`. For example, to display Starship's `character` module here, you would do
+
+```fish
+function starship_transient_prompt_func
+  starship module character
+end
+starship init fish | source
+enable_transience
+```
+
+- By default, the right side of input is empty. To customize this, define a new function called `starship_transient_rprompt_func`. For example, to display the time at which the last command was started here, you would do
+
+```fish
+function starship_transient_rprompt_func
+  starship module time
+end
+starship init fish | source
+enable_transience
+```
+
+## TransientPrompt and TransientRightPrompt in Bash
+
+The [Ble.sh](https://github.com/akinomyoga/ble.sh) framework at v0.4 or higher allows you to replace the previous-printed prompt with custom strings. This is useful in cases where all the prompt information is not always needed. To enable this, put this in `~/.bashrc` `bleopt prompt_ps1_transient=<value>`:
+
+The \<value\> here is a colon-separated list of `always`, `same-dir` and `trim`. When `prompt_ps1_final` is empty and the option `prompt_ps1_transient` has a non-empty \<value\>, the prompt specified by `PS1` is erased on leaving the current command line. If \<value\> contains a field `trim`, only the last line of multiline `PS1` is preserved and the other lines are erased. Otherwise, the command line will be redrawn as if `PS1=` is specified. When a field `same-dir` is contained in \<value\> and the current working directory is different from the final directory of the previous command line, this option `prompt_ps1_transient` is ignored.
+
+Make the following changes to your `~/.blerc` (or in `~/.config/blesh/init.sh`) to customize what gets displayed on the left and on the right:
+
+- To customize what the left side of input gets replaced with, configure the `prompt_ps1_final` Ble.sh option. For example, to display Starship's `character` module here, you would do
+
+```bash
+bleopt prompt_ps1_final='$(starship module character)'
+```
+
+- To customize what the right side of input gets replaced with, configure the `prompt_rps1_final` Ble.sh option. For example, to display the time at which the last command was started here, you would do
+
+```bash
+bleopt prompt_rps1_final='$(starship module time)'
+```
 
 ## Custom pre-prompt and pre-execution Commands in Cmd
 
@@ -121,33 +213,35 @@ You can also set a similar output with PowerShell by creating a function named `
 ```powershell
 # edit $PROFILE
 function Invoke-Starship-PreCommand {
-  $host.ui.Write("`e]0; PS> $env:USERNAME@$env:COMPUTERNAME`: $pwd `a")
+  $host.ui.RawUI.WindowTitle = "$env:USERNAME@$env:COMPUTERNAME`: $pwd `a"
 }
 
 Invoke-Expression (&starship init powershell)
 ```
 
-## Enable Right Prompt
+## 오른쪽 프롬프트 활성화
 
-Some shells support a right prompt which renders on the same line as the input. Starship can set the content of the right prompt using the `right_format` option. Any module that can be used in `format` is also supported in `right_format`. The `$all` variable will only contain modules not explicitly used in either `format` or `right_format`.
+일부 셸은 입력과 같은 줄에 렌더링되는 오른쪽 프롬프트를 지원합니다. Starship에서는 `right_format` 옵션을 사용하여 오른쪽 프롬프트의 내용을 설정할 수 있습니다. `format`에서 사용할 수 있는 모든 모듈은 `right_format`에서도 지원됩니다. `$all` 변수는 `format` 또는 `right_format`에서 명시적으로 사용하지 않는 모듈만 포함합니다.
 
-Note: The right prompt is a single line following the input location. To right align modules above the input line in a multi-line prompt, see the [fill module](/config/#fill).
+알림: 오른쪽 프롬프트는 입력 위치에 따라 한 줄로 표시됩니다. To right align modules above the input line in a multi-line prompt, see the [`fill` module](../config/#fill).
 
-`right_format` is currently supported for the following shells: elvish, fish, zsh, xonsh, cmd.
+`right_format` is currently supported for the following shells: elvish, fish, zsh, xonsh, cmd, nushell, bash.
 
-### Example
+Note: The [Ble.sh](https://github.com/akinomyoga/ble.sh) framework v0.4 or higher should be installed in order to use right prompt in bash.
+
+### 예시
 
 ```toml
 # ~/.config/starship.toml
 
-# A minimal left prompt
+# 간결한 왼쪽 프롬프트
 format = """$character"""
 
-# move the rest of the prompt to the right
+# 프롬프트의 나머지를 오른쪽으로 옮기기
 right_format = """$all"""
 ```
 
-Produces a prompt like the following:
+위 설정은 아래와 같은 프롬프트를 출력합니다:
 
 ```
 ▶                                   starship on  rprompt [!] is 📦 v0.57.0 via 🦀 v1.54.0 took 17s
@@ -157,7 +251,7 @@ Produces a prompt like the following:
 
 Some shells support a continuation prompt along with the normal prompt. This prompt is rendered instead of the normal prompt when the user has entered an incomplete statement (such as a single left parenthesis or quote).
 
-Starship can set the continuation prompt using the `continuation_prompt` option. The default prompt is `"[∙](bright-black) "`.
+Starship can set the continuation prompt using the `continuation_prompt` option. The default prompt is `'[∙](bright-black) '`.
 
 Note: `continuation_prompt` should be set to a literal string without any variables.
 
@@ -165,39 +259,48 @@ Note: Continuation prompts are only available in the following shells:
 
 - `bash`
 - `zsh`
-- `파워셀`
+- `Powershell`
 
-### Example
+### 예시
 
 ```toml
 # ~/.config/starship.toml
 
-# A continuation prompt that displays two filled in arrows
-continuation_prompt = "▶▶"
+# A continuation prompt that displays two filled-in arrows
+continuation_prompt = '▶▶ '
 ```
 
-## Style Strings
+## 스타일 문자열
 
-Style strings are a list of words, separated by whitespace. The words are not case sensitive (i.e. `bold` and `BoLd` are considered the same string). Each word can be one of the following:
+스타일 문자열은 공백으로 구분된 단어 목록입니다. 단어는 대소문자를 구분하지 않습니다 (즉, `bold`와 `BoLd`는 동일한 문자열로 간주됩니다). 각 단어는 다음 중 하나가 될 수 있습니다:
 
 - `bold`
 - `italic`
 - `underline`
 - `dimmed`
 - `inverted`
+- `blink`
+- `hidden`
+- `strikethrough`
 - `bg:<color>`
 - `fg:<color>`
 - `<color>`
 - `none`
 
-where `<color>` is a color specifier (discussed below). `fg:<color>` and `<color>` currently do the same thing, though this may change in the future. `inverted` swaps the background and foreground colors. The order of words in the string does not matter.
+`<color>` 부분은 색상 지정자입니다 (아래에 후술). 현재, `fg:<color>` 와 `<color>`는 동일한 동작을 하지만 차후에 바뀔 수 있습니다. `<color>` can also be set to `prev_fg` or `prev_bg` which evaluates to the previous item's foreground or background color respectively if available or `none` otherwise. `inverted`는 배경 색과 전경 색을 서로 바꿉니다. 문자열의 단어 순서는 중요하지 않습니다.
 
-The `none` token overrides all other tokens in a string if it is not part of a `bg:` specifier, so that e.g. `fg:red none fg:blue` will still create a string with no styling. `bg:none` sets the background to the default color so `fg:red bg:none` is equivalent to `red` or `fg:red` and `bg:green fg:red bg:none` is also equivalent to `fg:red` or `red`. It may become an error to use `none` in conjunction with other tokens in the future.
+The `none` token overrides all other tokens in a string if it is not part of a `bg:` specifier, so that e.g. `fg:red none fg:blue` will still create a string with no styling. `bg:none` sets the background to the default color so `fg:red bg:none` is equivalent to `red` or `fg:red` and `bg:green fg:red bg:none` is also equivalent to `fg:red` or `red`. 향후 다른 토큰과 함께 `none`을 사용하는 것은 오류가 발생할 수 있습니다.
 
-A color specifier can be one of the following:
+색상 지정자는 다음 중 하나가 될 수 있습니다:
 
-- One of the standard terminal colors: `black`, `red`, `green`, `blue`, `yellow`, `purple`, `cyan`, `white`. You can optionally prefix these with `bright-` to get the bright version (e.g. `bright-white`).
-- A `#` followed by a six-digit hexadecimal number. This specifies an [RGB color hex code](https://www.w3schools.com/colors/colors_hexadecimal.asp).
-- A number between 0-255. This specifies an [8-bit ANSI Color Code](https://i.stack.imgur.com/KTSQa.png).
+- 표준 터미널 색상: `black`, `red`, `green`, `blue`, `yellow`, `purple`, `cyan`, `white`. 앞에 `bright-`를 붙여 밝게 만들 수도 있습니다 (예시: `bright-white`).
+- `#` 다음의 여섯 자리 16진수 숫자. 이는 [RGB 색상 16진수 코드](https://www.w3schools.com/colors/colors_hexadecimal.asp)입니다.
+- 0~255 사이의 숫자. 이는 [8비트 ANSI 색상 코드](https://i.stack.imgur.com/KTSQa.png)입니다.
 
 If multiple colors are specified for foreground/background, the last one in the string will take priority.
+
+Not every style string will be displayed correctly by every terminal. In particular, the following known quirks exist:
+
+- Many terminals disable support for `blink` by default.
+- `hidden` is [not supported on iTerm](https://gitlab.com/gnachman/iterm2/-/issues/4564).
+- `strikethrough` is not supported by the default macOS Terminal.app.

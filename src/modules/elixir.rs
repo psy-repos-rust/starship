@@ -1,11 +1,11 @@
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 
 use crate::configs::elixir::ElixirConfig;
 use crate::formatter::StringFormatter;
 
 use crate::formatter::VersionFormatter;
-use once_cell::sync::Lazy;
 use std::ops::Deref;
+use std::sync::LazyLock;
 
 /// Create a module with the current Elixir version
 pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
@@ -23,7 +23,7 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
         return None;
     }
 
-    let versions = Lazy::new(|| get_elixir_version(context));
+    let versions = LazyLock::new(|| get_elixir_version(context));
 
     let parsed = StringFormatter::new(config.format).and_then(|formatter| {
         formatter
@@ -91,7 +91,7 @@ fn parse_elixir_version(version: &str) -> Option<(String, String)> {
 mod tests {
     use super::*;
     use crate::test::ModuleRenderer;
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::fs::File;
     use std::io;
 

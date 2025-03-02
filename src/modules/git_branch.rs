@@ -1,6 +1,6 @@
 use unicode_segmentation::UnicodeSegmentation;
 
-use super::{Context, Module, RootModuleConfig};
+use super::{Context, Module, ModuleConfig};
 
 use crate::configs::git_branch::GitBranchConfig;
 use crate::formatter::StringFormatter;
@@ -19,23 +19,27 @@ pub fn module<'a>(context: &'a Context) -> Option<Module<'a>> {
             "\"truncation_length\" should be a positive value, found {}",
             config.truncation_length
         );
-        std::usize::MAX
+        usize::MAX
     } else {
         config.truncation_length as usize
     };
 
     let repo = context.get_repo().ok()?;
 
-    if config.only_attached {
-        if let Ok(git_repo) = repo.open() {
-            if git_repo.head_detached().ok()? {
-                return None;
-            }
-        }
+    if config.only_attached && repo.open().head().ok()?.is_detached() {
+        return None;
     }
 
-    let branch_name = repo.branch.as_ref()?;
+    let branch_name = repo.branch.as_deref().unwrap_or("HEAD");
     let mut graphemes: Vec<&str> = branch_name.graphemes(true).collect();
+
+    if config
+        .ignore_branches
+        .iter()
+        .any(|&ignored| branch_name.eq(ignored))
+    {
+        return None;
+    }
 
     let mut remote_branch_graphemes: Vec<&str> = Vec::new();
     let mut remote_name_graphemes: Vec<&str> = Vec::new();
@@ -116,7 +120,7 @@ fn get_first_grapheme(text: &str) -> &str {
 
 #[cfg(test)]
 mod tests {
-    use ansi_term::Color;
+    use nu_ansi_term::Color;
     use std::io;
 
     use crate::test::{fixture_repo, FixtureProvider, ModuleRenderer};
@@ -200,12 +204,12 @@ mod tests {
 
     #[test]
     fn test_hindi_truncation() -> io::Result<()> {
-        test_truncate_length("नमस्ते", 3, "नमस्", "…")
+        test_truncate_length("नमस्ते", 2, "नम", "…")
     }
 
     #[test]
     fn test_hindi_truncation2() -> io::Result<()> {
-        test_truncate_length("नमस्त", 3, "नमस्", "…")
+        test_truncate_length("नमस्त", 2, "नम", "…")
     }
 
     #[test]
@@ -265,17 +269,17 @@ mod tests {
         let repo_dir = tempfile::tempdir()?;
 
         create_command("git")?
-            .args(&["init"])
+            .args(["init"])
             .current_dir(&repo_dir)
             .output()?;
 
         create_command("git")?
-            .args(&["symbolic-ref", "HEAD", "refs/heads/main"])
+            .args(["symbolic-ref", "HEAD", "refs/heads/main"])
             .current_dir(&repo_dir)
             .output()?;
 
         let actual = ModuleRenderer::new("git_branch")
-            .path(&repo_dir.path())
+            .path(repo_dir.path())
             .collect();
 
         let expected = Some(format!(
@@ -292,7 +296,7 @@ mod tests {
         let repo_dir = fixture_repo(FixtureProvider::Git)?;
 
         create_command("git")?
-            .args(&["checkout", "-b", "test_branch"])
+            .args(["checkout", "-b", "test_branch"])
             .current_dir(repo_dir.path())
             .output()?;
 
@@ -301,7 +305,7 @@ mod tests {
                 [git_branch]
                     only_attached = true
             })
-            .path(&repo_dir.path())
+            .path(repo_dir.path())
             .collect();
 
         let expected = Some(format!(
@@ -320,8 +324,8 @@ mod tests {
         let repo_dir = fixture_repo(FixtureProvider::Git)?;
 
         create_command("git")?
-            .args(&["checkout", "@~1"])
-            .current_dir(&repo_dir.path())
+            .args(["checkout", "@~1"])
+            .current_dir(repo_dir.path())
             .output()?;
 
         let actual = ModuleRenderer::new("git_branch")
@@ -329,7 +333,7 @@ mod tests {
                 [git_branch]
                     only_attached = true
             })
-            .path(&repo_dir.path())
+            .path(repo_dir.path())
             .collect();
 
         let expected = None;
@@ -343,23 +347,105 @@ mod tests {
         let repo_dir = tempfile::tempdir()?;
 
         create_command("git")?
-            .args(&["init", "--bare"])
+            .args(["init", "--bare"])
             .current_dir(&repo_dir)
             .output()?;
 
         create_command("git")?
-            .args(&["symbolic-ref", "HEAD", "refs/heads/main"])
+            .args(["symbolic-ref", "HEAD", "refs/heads/main"])
             .current_dir(&repo_dir)
             .output()?;
 
         let actual = ModuleRenderer::new("git_branch")
-            .path(&repo_dir.path())
+            .path(repo_dir.path())
             .collect();
 
         let expected = Some(format!(
             "on {} ",
             Color::Purple.bold().paint(format!("\u{e0a0} {}", "main")),
         ));
+
+        assert_eq!(expected, actual);
+        repo_dir.close()
+    }
+
+    #[test]
+    fn test_ignore_branches() -> io::Result<()> {
+        let repo_dir = fixture_repo(FixtureProvider::Git)?;
+
+        create_command("git")?
+            .args(["checkout", "-b", "test_branch"])
+            .current_dir(repo_dir.path())
+            .output()?;
+
+        let actual = ModuleRenderer::new("git_branch")
+            .config(toml::toml! {
+                [git_branch]
+                    ignore_branches = ["dummy", "test_branch"]
+            })
+            .path(repo_dir.path())
+            .collect();
+
+        let expected = None;
+
+        assert_eq!(expected, actual);
+        repo_dir.close()
+    }
+
+    #[test]
+    fn test_remote() -> io::Result<()> {
+        let remote_dir = fixture_repo(FixtureProvider::Git)?;
+        let repo_dir = fixture_repo(FixtureProvider::Git)?;
+
+        create_command("git")?
+            .args(["checkout", "-b", "test_branch"])
+            .current_dir(repo_dir.path())
+            .output()?;
+
+        create_command("git")?
+            .args(["remote", "add", "--fetch", "remote_repo"])
+            .arg(remote_dir.path())
+            .current_dir(repo_dir.path())
+            .output()?;
+
+        create_command("git")?
+            .args(["branch", "--set-upstream-to", "remote_repo/master"])
+            .current_dir(repo_dir.path())
+            .output()?;
+
+        let actual = ModuleRenderer::new("git_branch")
+            .path(repo_dir.path())
+            .config(toml::toml! {
+                [git_branch]
+                format = "$branch(:$remote_name/$remote_branch)"
+            })
+            .collect();
+
+        let expected = Some("test_branch:remote_repo/master");
+
+        assert_eq!(expected, actual.as_deref());
+        repo_dir.close()?;
+        remote_dir.close()
+    }
+
+    #[test]
+    fn test_branch_fallback_on_detached() -> io::Result<()> {
+        let repo_dir = fixture_repo(FixtureProvider::Git)?;
+
+        create_command("git")?
+            .args(["checkout", "@~1"])
+            .current_dir(repo_dir.path())
+            .output()?;
+
+        let actual = ModuleRenderer::new("git_branch")
+            .config(toml::toml! {
+                [git_branch]
+                format = "$branch"
+            })
+            .path(repo_dir.path())
+            .collect();
+
+        let expected = Some("HEAD".into());
 
         assert_eq!(expected, actual);
         repo_dir.close()
@@ -419,7 +505,7 @@ mod tests {
         let repo_dir = fixture_repo(FixtureProvider::Git)?;
 
         create_command("git")?
-            .args(&["checkout", "-b", branch_name])
+            .args(["checkout", "-b", branch_name])
             .current_dir(repo_dir.path())
             .output()?;
 
@@ -428,10 +514,9 @@ mod tests {
                 toml::from_str(&format!(
                     "
                     [git_branch]
-                        truncation_length = {}
-                        {}
-                ",
-                    truncate_length, config_options
+                        truncation_length = {truncate_length}
+                        {config_options}
+                "
                 ))
                 .unwrap(),
             )
@@ -442,7 +527,7 @@ mod tests {
             "on {} ",
             Color::Purple
                 .bold()
-                .paint(format!("\u{e0a0} {}{}", expected_name, truncation_symbol)),
+                .paint(format!("\u{e0a0} {expected_name}{truncation_symbol}")),
         ));
 
         assert_eq!(expected, actual);
@@ -458,7 +543,7 @@ mod tests {
         let repo_dir = fixture_repo(FixtureProvider::Git)?;
 
         create_command("git")?
-            .args(&["checkout", "-b", branch_name])
+            .args(["checkout", "-b", branch_name])
             .current_dir(repo_dir.path())
             .output()?;
 
@@ -467,10 +552,9 @@ mod tests {
                 toml::from_str(&format!(
                     r#"
                     [git_branch]
-                        format = "{}"
-                        {}
-                "#,
-                    format, config_options
+                        format = "{format}"
+                        {config_options}
+                "#
                 ))
                 .unwrap(),
             )

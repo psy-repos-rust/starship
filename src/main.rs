@@ -1,30 +1,28 @@
-#![warn(clippy::disallowed_method)]
+#![warn(clippy::disallowed_methods)]
 
 use clap::crate_authors;
 use std::io;
+use std::path::PathBuf;
+use std::thread::available_parallelism;
 use std::time::SystemTime;
 
-use clap::{AppSettings, IntoApp, Parser, Subcommand};
+use clap::{CommandFactory, Parser, Subcommand};
 use clap_complete::{generate, Shell as CompletionShell};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
-use starship::context::{Properties, Target};
+use starship::context::{Context, Properties, Target};
 use starship::module::ALL_MODULES;
 use starship::*;
-
-fn long_version() -> &'static str {
-    let ver = Box::new(crate::shadow::clap_version());
-    Box::leak(ver).as_str()
-}
 
 #[derive(Parser, Debug)]
 #[clap(
     author=crate_authors!(),
     version=shadow::PKG_VERSION,
-    long_version=long_version(),
-    about="The cross-shell prompt for astronauts. ☄🌌️"
+    long_version=shadow::CLAP_LONG_VERSION,
+    about="The cross-shell prompt for astronauts. ☄🌌️",
+    subcommand_required=true,
+    arg_required_else_help=true,
 )]
-#[clap(setting(AppSettings::SubcommandRequiredElseHelp))]
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
@@ -36,7 +34,7 @@ enum Commands {
     BugReport,
     /// Generate starship shell completions for your shell to stdout
     Completions {
-        #[clap(arg_enum)]
+        #[clap(value_enum)]
         shell: CompletionShell,
     },
     /// Edit the starship configuration
@@ -58,13 +56,25 @@ enum Commands {
     ///  Prints a specific prompt module
     Module {
         /// The name of the module to be printed
-        #[clap(required = true, required_unless_present = "list")]
+        #[clap(required_unless_present("list"))]
         name: Option<String>,
         /// List out all supported modules
         #[clap(short, long)]
         list: bool,
         #[clap(flatten)]
         properties: Properties,
+    },
+    /// Prints a preset config
+    Preset {
+        /// The name of preset to be printed
+        #[clap(required_unless_present("list"), value_enum)]
+        name: Option<print::Preset>,
+        /// Output the preset to a file instead of stdout
+        #[clap(short, long, conflicts_with = "list")]
+        output: Option<PathBuf>,
+        /// List out all preset names
+        #[clap(short, long)]
+        list: bool,
     },
     /// Prints the computed starship configuration
     PrintConfig {
@@ -79,8 +89,11 @@ enum Commands {
         /// Print the right prompt (instead of the standard left prompt)
         #[clap(long)]
         right: bool,
-        /// Print the continuation prompt (instead of the standard left prompt)
+        /// Print the prompt with the specified profile name (instead of the standard left prompt)
         #[clap(long, conflicts_with = "right")]
+        profile: Option<String>,
+        /// Print the continuation prompt (instead of the standard left prompt)
+        #[clap(long, conflicts_with = "right", conflicts_with = "profile")]
         continuation: bool,
         #[clap(flatten)]
         properties: Properties,
@@ -88,7 +101,7 @@ enum Commands {
     /// Generate random session key
     Session,
     /// Prints time in milliseconds
-    #[clap(setting=AppSettings::Hidden)]
+    #[clap(hide = true)]
     Time,
     /// Prints timings of all active modules
     Timings(Properties),
@@ -100,13 +113,23 @@ enum Commands {
         #[clap(default_value = "disabled")]
         value: String,
     },
+    #[cfg(feature = "config-schema")]
+    /// Generate a schema for the starship configuration as JSON-schema
+    ConfigSchema,
 }
 
 fn main() {
     // Configure the current terminal on windows to support ANSI escape sequences.
     #[cfg(windows)]
-    let _ = ansi_term::enable_ansi_support();
+    let _ = nu_ansi_term::enable_ansi_support();
     logger::init();
+    init_global_threadpool();
+
+    // Delete old log files
+    rayon::spawn(|| {
+        let log_dir = logger::get_log_dir();
+        logger::cleanup_log_files(log_dir);
+    });
 
     let args = match Cli::try_parse() {
         Ok(args) => args,
@@ -156,14 +179,16 @@ fn main() {
         Commands::Prompt {
             properties,
             right,
+            profile,
             continuation,
         } => {
-            let target = match (right, continuation) {
-                (true, _) => Target::Right,
-                (_, true) => Target::Continuation,
-                (_, _) => Target::Main,
+            let target = match (right, profile, continuation) {
+                (true, _, _) => Target::Right,
+                (_, Some(profile_name), _) => Target::Profile(profile_name),
+                (_, _, true) => Target::Continuation,
+                (_, _, _) => Target::Main,
             };
-            print::prompt(properties, target)
+            print::prompt(properties, target);
         }
         Commands::Module {
             name,
@@ -174,24 +199,31 @@ fn main() {
                 println!("Supported modules list");
                 println!("----------------------");
                 for modules in ALL_MODULES {
-                    println!("{}", modules);
+                    println!("{modules}");
                 }
             }
             if let Some(module_name) = name {
                 print::module(&module_name, properties);
             }
         }
+        Commands::Preset { name, list, output } => print::preset_command(name, output, list),
         Commands::Config { name, value } => {
+            let context = Context::default();
             if let Some(name) = name {
                 if let Some(value) = value {
-                    configure::update_configuration(&name, &value)
+                    configure::update_configuration(&context, &name, &value);
                 }
-            } else {
-                configure::edit_configuration()
+            } else if let Err(reason) = configure::edit_configuration(&context, None) {
+                eprintln!("Could not edit configuration: {reason}");
+                std::process::exit(1);
             }
         }
-        Commands::PrintConfig { default, name } => configure::print_configuration(default, &name),
-        Commands::Toggle { name, value } => configure::toggle_configuration(&name, &value),
+        Commands::PrintConfig { default, name } => {
+            configure::print_configuration(&Context::default(), default, &name);
+        }
+        Commands::Toggle { name, value } => {
+            configure::toggle_configuration(&Context::default(), &name, &value);
+        }
         Commands::BugReport => bug_report::create(),
         Commands::Time => {
             match SystemTime::now()
@@ -206,7 +238,7 @@ fn main() {
         Commands::Timings(props) => print::timings(props),
         Commands::Completions { shell } => generate(
             shell,
-            &mut Cli::into_app(),
+            &mut Cli::command(),
             "starship",
             &mut io::stdout().lock(),
         ),
@@ -218,5 +250,23 @@ fn main() {
                 .map(char::from)
                 .collect::<String>()
         ),
+        #[cfg(feature = "config-schema")]
+        Commands::ConfigSchema => print::print_schema(),
     }
+}
+
+/// Initialize global `rayon` thread pool
+fn init_global_threadpool() {
+    // Allow overriding the number of threads
+    let num_threads = std::env::var("STARSHIP_NUM_THREADS")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        // Default to the number of logical cores,
+        // but restrict the number of threads to 8
+        .unwrap_or_else(|| available_parallelism().map(usize::from).unwrap_or(1).min(8));
+
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(num_threads)
+        .build_global()
+        .expect("Failed to initialize worker thread pool");
 }
